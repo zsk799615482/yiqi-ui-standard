@@ -963,3 +963,37 @@ test('review and platform guidance use the v2 quality contract', async () => {
   assert.match(platform, /scripts\/validate-generated-web\.mjs/);
   assert.match(platform, /Playwright 桌面\/移动验收/);
 });
+
+test('release metadata and pressure cases cover v2 behavior', async () => {
+  const version = (await read('VERSION')).trim();
+  const tokens = JSON.parse(await read('design-tokens.json'));
+  const cases = JSON.parse(await read('tests/evals/ui-standard-v2-cases.json'));
+  const readme = await read('README.md');
+
+  assert.equal(version, '2.0.0');
+  assert.equal(tokens.meta.version, version);
+  assert.ok(cases.length >= 9);
+
+  const ids = new Set(cases.map((entry) => entry.id));
+  for (const id of [
+    'planning-greenfield',
+    'marketing-implementation',
+    'service-without-media',
+    'mobile-consumer-product',
+    'saas-operations',
+    'saas-ai-workspace',
+    'saas-analytics',
+    'composite-product',
+    'review-baseline',
+  ]) {
+    assert.ok(ids.has(id), `missing eval: ${id}`);
+  }
+
+  assert.match(readme, /静态校验存在 error 时阻塞/);
+  assert.match(readme, /warning[\s\S]*浏览器[\s\S]*复核并记录/);
+  assert.match(readme, /外部样式表/);
+  assert.match(readme, /复杂 CSS 级联/);
+  assert.match(readme, /非 px 单位或长度计算/);
+  assert.match(readme, /字体加载/);
+  assert.match(readme, /视觉质量/);
+});
