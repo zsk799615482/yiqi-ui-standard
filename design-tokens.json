@@ -297,6 +297,8 @@
       "backdropBlur": "24px",
       "backdropSaturation": "140%",
       "reducedTransparencyFallback": "{darkColors.surface}",
+      "reducedTransparencyMaterial": "solid",
+      "unsupportedBackdropMaterial": "solid",
       "unsupportedBackdropFallback": {
         "background": "{darkColors.surface}",
         "border": "{darkColors.border}",

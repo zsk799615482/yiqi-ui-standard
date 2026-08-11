@@ -131,7 +131,7 @@ color-danger-700
 | `color-text-primary` | dark text primary | 标题、重点文本 |
 | `color-text-secondary` | dark text secondary | 正文、说明文本 |
 | `color-text-tertiary` | dark text tertiary | 辅助文本、占位符 |
-| `color-text-inverse` | white | 深色或品牌实心背景上的反色文本 |
+| `color-text-inverse` | white | 深色中性背景上的反色文本 |
 | `color-text-on-accent` | dark page | 品牌色或危险色实心操作上的高对比文本 |
 | `color-bg-page` | dark page | 页面背景 |
 | `color-bg-surface` | dark surface | 实体卡片、面板背景 |
@@ -316,8 +316,8 @@ SaaS 与持续工作界面采用更紧凑的角色范围：
 | 状态 | 视觉变化 |
 |------|---------|
 | default | 基准样式 |
-| hover | 基准色与深色之间做轻微明度变化，可选 `translateY(-1px)` |
-| active | `scale(0.98)`，背景再加深一档 |
+| hover | primary / danger 使用 color-text-on-accent 时不得降低对比度；应保持或提高背景亮度，或仅使用边框、阴影或 translate 反馈；每个状态仍需达到 AA |
+| active | 可使用 `scale(0.98)`；颜色变化必须通过对比度检查并达到 AA |
 | focus-visible | `outline: 2px solid color-border-focus; outline-offset: 2px` |
 | disabled | `opacity: 0.5; cursor: not-allowed; pointer-events: none` |
 | loading | 显示 spinner，文字改为进行时（如"提交中..."），禁用交互 |
@@ -377,6 +377,7 @@ SaaS 与持续工作界面采用更紧凑的角色范围：
 - 液态玻璃必须有可辨识背景内容、足够文字对比度和边界；背景不可读时改用实体材质
 - 用户开启减少透明时，玻璃降级为实体背景并关闭 `backdrop-filter`
 - 浏览器不支持 backdrop filter 时，玻璃降级为实体背景、实体边框和 solid shadow，并关闭滤镜
+- 减少透明与不支持 backdrop filter 两个降级场景复用 solid token，不复制另一套值
 - 可点击卡片必须实现 `hover`、`active` 和 `focus-visible`；不可点击卡片不得伪造交互反馈
 - 移动端可适度降低半径，但必须保持连续曲率，不得退回控件级圆角
 

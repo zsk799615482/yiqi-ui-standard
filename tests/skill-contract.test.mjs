@@ -590,6 +590,8 @@ test('cards use one continuous large-radius token and two materials', async () =
       backdropBlur: '24px',
       backdropSaturation: '140%',
       reducedTransparencyFallback: '{darkColors.surface}',
+      reducedTransparencyMaterial: 'solid',
+      unsupportedBackdropMaterial: 'solid',
       unsupportedBackdropFallback: {
         background: '{darkColors.surface}',
         border: '{darkColors.border}',
@@ -793,6 +795,10 @@ test('visual references document dark typography and card boundaries', async () 
     assert.match(document, /生成前必须询问/);
     assert.match(document, /玻璃卡片不得嵌套|玻璃材质不得嵌套/);
     assert.match(document, /减少透明[\s\S]*实体背景/);
+    assert.match(
+      document,
+      /减少透明与不支持 backdrop filter 两个降级场景复用 solid token，不复制另一套值/,
+    );
   }
 
   assert.match(card, /16–24px/);
@@ -809,7 +815,7 @@ test('visual references document dark typography and card boundaries', async () 
   assert.doesNotMatch(card, /radius-lg/);
   assert.match(
     visual,
-    /\| `color-text-inverse` \| white \| 深色或品牌实心背景上的反色文本 \|/,
+    /\| `color-text-inverse` \| white \| 深色中性背景上的反色文本 \|/,
   );
   assert.doesNotMatch(
     visual,
@@ -818,6 +824,10 @@ test('visual references document dark typography and card boundaries', async () 
   assert.doesNotMatch(
     visual,
     /浅色或品牌实心背景上的反色文本/,
+  );
+  assert.doesNotMatch(
+    visual,
+    /`color-text-inverse`[^|\n]*\|[^|\n]*品牌实心背景/,
   );
   assert.match(visual, /基础 `text-5xl` 为 42px/);
   assert.match(visual, /不得超过排版角色上限/);
@@ -831,6 +841,16 @@ test('visual references document dark typography and card boundaries', async () 
     /\| danger \|[^|]*\| color-text-on-accent \|/,
   );
   assert.match(button, /color-text-on-accent[\s\S]*WCAG AA/);
+  assert.match(
+    button,
+    /\| hover \|[^|\n]*primary \/ danger[^|\n]*不得降低对比度[^|\n]*保持或提高背景亮度[^|\n]*边框、阴影或 translate[^|\n]*AA[^|\n]*\|/,
+  );
+  assert.match(
+    button,
+    /\| active \|[^|\n]*scale\(0\.98\)[^|\n]*颜色变化必须通过对比度检查[^|\n]*AA[^|\n]*\|/,
+  );
+  assert.doesNotMatch(button, /向深色变化/);
+  assert.doesNotMatch(button, /背景再加深一档/);
   assert.doesNotMatch(
     button,
     /\| (?:primary|danger) \|[^|]*\| color-text-primary \|/,
@@ -849,6 +869,8 @@ test('visual references document dark typography and card boundaries', async () 
 
 test('OneSeven review language enforces shared boundaries', async () => {
   const guidance = await read('references/oneseven-guidance.md');
+  const responsiveCardLanguage =
+    '桌面 36px；移动 28–36px、默认 32px；同一连续卡片语言。';
 
   assert.match(
     guidance,
@@ -862,4 +884,15 @@ test('OneSeven review language enforces shared boundaries', async () => {
     guidance,
     /除明确品牌冲突外，优先使用“建议”“可以考虑”“需要确认局部规则”等措辞/,
   );
+  assert.equal(
+    guidance.match(new RegExp(escapeRegExp(responsiveCardLanguage), 'g'))
+      ?.length,
+    2,
+  );
+  assert.doesNotMatch(guidance, /36px 连续卡片语言是本 Skill/);
+  assert.doesNotMatch(
+    guidance,
+    /独立卡片仍遵守共享的 36px 连续大圆角/,
+  );
+  assert.doesNotMatch(guidance, /所有独立卡片使用 36px/);
 });
