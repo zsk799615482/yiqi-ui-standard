@@ -43,7 +43,9 @@ C. 已有页面审查或改进
 
 ### 第 3 步：Hero / No Hero
 
-读取 `references/hero-standards.md`。根据当前页面任务自动选择 Hero 或 No Hero，并允许用户覆盖。不得默认生成左右分栏 Hero。
+读取 `references/hero-standards.md`。规划与需求阶段仍按 `references/planning-workflow.md` 的访谈顺序，在页面地图、密度与节奏、素材状态确认后，于第 7 项决定 Hero。代码实现和已有页面审查或改进阶段，在产品画像和页面主要任务确认后执行 Hero 路由。
+
+同时判断当前页面主要任务和页面类型，自动选择 Hero 或 No Hero；冲突时遵循 `references/product-archetypes.md` 的优先级，当前页面主要任务优先于页面类型。允许用户覆盖。不得默认生成左右分栏 Hero。
 
 ## 核心原则
 

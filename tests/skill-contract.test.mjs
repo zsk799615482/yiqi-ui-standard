@@ -5,6 +5,22 @@ import test from 'node:test';
 const read = (relativePath) =>
   readFile(new URL(`../${relativePath}`, import.meta.url), 'utf8');
 
+const escapeRegExp = (value) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const markdownSection = (markdown, heading) => {
+  const marker = `## ${heading}`;
+  const start = markdown.indexOf(marker);
+  assert.notEqual(start, -1, `missing markdown section: ${heading}`);
+
+  const contentStart = start + marker.length;
+  const nextSection = markdown.indexOf('\n## ', contentStart);
+  return markdown.slice(
+    contentStart,
+    nextSection === -1 ? markdown.length : nextSection,
+  );
+};
+
 test('SKILL entry asks brand mode before project stage', async () => {
   const skill = await read('SKILL.md');
 
@@ -152,6 +168,8 @@ test('product profiles support composite products and page overrides', async () 
 test('Hero rules constrain type scale and reject decorative split layouts', async () => {
   const skill = await read('SKILL.md');
   const hero = await read('references/hero-standards.md');
+  const routing = markdownSection(hero, '路由原则');
+  const prohibitions = markdownSection(hero, '禁止');
 
   assert.match(skill, /references\/hero-standards\.md/);
   assert.match(skill, /### 第 3 步：Hero \/ No Hero/);
@@ -162,14 +180,24 @@ test('Hero rules constrain type scale and reject decorative split layouts', asyn
   );
   assert.match(
     skill,
-    /根据当前页面任务自动选择 Hero 或 No Hero/,
+    /规划与需求阶段[\s\S]*references\/planning-workflow\.md[\s\S]*页面地图[\s\S]*密度[\s\S]*素材状态[\s\S]*第 7 项决定 Hero/,
+  );
+  assert.match(
+    skill,
+    /代码实现和已有页面审查或改进阶段，在产品画像和页面主要任务确认后执行 Hero 路由/,
+  );
+
+  const routingRule =
+    '同时判断当前页面主要任务和页面类型，自动选择 Hero 或 No Hero；冲突时遵循 `references/product-archetypes.md` 的优先级，当前页面主要任务优先于页面类型。';
+  assert.ok(skill.includes(routingRule));
+  assert.ok(routing.includes(routingRule));
+  assert.match(
+    routing,
+    /持续操作、数据或任务壳层默认使用 No Hero/,
   );
   assert.match(skill, /允许用户覆盖/);
   assert.match(skill, /不得默认生成左右分栏 Hero/);
-
-  assert.match(hero, /按页面类型自动选择 Hero 或 No Hero/);
-  assert.match(hero, /允许用户覆盖/);
-  assert.match(hero, /持续操作、数据或任务壳层默认使用 No Hero/);
+  assert.match(routing, /允许用户覆盖/);
 
   const allowedHeroPages = [
     '品牌官网',
@@ -180,11 +208,23 @@ test('Hero rules constrain type scale and reject decorative split layouts', asyn
 
   for (const page of allowedHeroPages) {
     assert.match(
-      hero,
+      routing,
       new RegExp(page),
       `missing allowed Hero page: ${page}`,
     );
   }
+
+  assert.match(
+    routing,
+    /部分低密度服务页[\s\S]*主要任务为浏览、理解或咨询转化/,
+  );
+  assert.match(routing, /低信息密度/);
+  assert.match(routing, /非持续工作/);
+  assert.match(routing, /无数据管理或批量操作壳层/);
+  assert.match(
+    routing,
+    /若存在持续任务、数据或操作，则使用 No Hero/,
+  );
 
   assert.match(hero, /36–42px/);
   assert.match(hero, /30–36px/);
@@ -203,15 +243,30 @@ test('Hero rules constrain type scale and reject decorative split layouts', asyn
   assert.match(hero, /data-ui-hero-media/);
   assert.match(hero, /data-ui-product-state/);
 
-  assert.match(hero, /默认左右文案\/装饰图分栏/);
-  assert.match(hero, /大型抽象圆形、轨道、光球和无信息几何/);
-  assert.match(hero, /装饰图冒充产品视觉/);
-  assert.match(hero, /Hero 主内容放进装饰卡片/);
-  assert.match(hero, /超大标题和大空白代替层级/);
+  const forbiddenPatterns = [
+    '默认左右文案/装饰图分栏',
+    '大型抽象圆形、轨道、光球和无信息几何',
+    '装饰图冒充产品视觉',
+    'Hero 主内容放进装饰卡片',
+    '超大标题和大空白代替层级',
+  ];
+
+  for (const pattern of forbiddenPatterns) {
+    assert.match(
+      prohibitions,
+      new RegExp(
+        `^- (?:禁止|不得)[^\\n]*${escapeRegExp(pattern)}[^\\n]*$`,
+        'm',
+      ),
+      `missing prohibition or wrong semantic polarity: ${pattern}`,
+    );
+  }
 });
 
 test('operational products route to No Hero', async () => {
   const hero = await read('references/hero-standards.md');
+  const routing = markdownSection(hero, '路由原则');
+  const noHero = markdownSection(hero, 'No Hero 默认页面');
   const noHeroProducts = [
     'SaaS 工作台',
     'AI 持续操作工具',
@@ -221,16 +276,28 @@ test('operational products route to No Hero', async () => {
     '个人中心/钱包/账户操作页面',
   ];
 
+  assert.match(noHero, /以下页面默认使用 No Hero/);
+
   for (const product of noHeroProducts) {
     assert.match(
-      hero,
-      new RegExp(product),
+      noHero,
+      new RegExp(`^- ${escapeRegExp(product)}$`, 'm'),
       `missing No Hero product route: ${product}`,
+    );
+    assert.doesNotMatch(
+      routing,
+      new RegExp(escapeRegExp(product)),
+      `No Hero product must not appear in allowed Hero routing: ${product}`,
+    );
+    assert.equal(
+      hero.match(new RegExp(escapeRegExp(product), 'g'))?.length ?? 0,
+      1,
+      `No Hero product must only appear in its default section: ${product}`,
     );
   }
 
   assert.match(
-    hero,
+    noHero,
     /No Hero 页面直接显示导航、当前任务、数据、状态和主要操作/,
   );
 });
