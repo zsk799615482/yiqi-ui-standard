@@ -148,3 +148,47 @@ test('product profiles support composite products and page overrides', async () 
     previousPriorityIndex = priorityIndex;
   }
 });
+
+test('Hero rules constrain type scale and reject decorative split layouts', async () => {
+  const skill = await read('SKILL.md');
+  const hero = await read('references/hero-standards.md');
+
+  assert.match(skill, /references\/hero-standards\.md/);
+  assert.match(skill, /### 第 3 步：Hero \/ No Hero/);
+  assert.ok(
+    skill.indexOf('第 2 步：产品画像') <
+      skill.indexOf('第 3 步：Hero / No Hero'),
+    'product profiling must precede Hero / No Hero routing',
+  );
+
+  assert.match(hero, /36–42px/);
+  assert.match(hero, /30–36px/);
+  assert.match(hero, /真实产品或对象的?全幅媒体/);
+  assert.match(hero, /可检查的?产品界面或工作状态/);
+  assert.match(hero, /编辑式内容构图/);
+  assert.match(hero, /默认左右文案\/装饰图分栏/);
+  assert.match(hero, /大型抽象圆形/);
+  assert.match(hero, /首屏[\s\S]*露出下一业务内容/);
+  assert.match(hero, /data-ui-hero-media/);
+  assert.match(hero, /data-ui-product-state/);
+});
+
+test('operational products route to No Hero', async () => {
+  const hero = await read('references/hero-standards.md');
+  const noHeroProducts = [
+    'SaaS 工作台',
+    'AI 持续操作工具',
+    '管理后台',
+    '数据分析和监控页面',
+    '表格/审批/项目/批量操作页面',
+    '个人中心/钱包/账户操作页面',
+  ];
+
+  for (const product of noHeroProducts) {
+    assert.match(
+      hero,
+      new RegExp(product),
+      `missing No Hero product route: ${product}`,
+    );
+  }
+});
