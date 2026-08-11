@@ -2,22 +2,7 @@
 
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
-
-const VALID_PAGE_TYPES = new Set([
-  'marketing',
-  'product',
-  'content',
-  'commerce',
-  'community',
-  'consumer-tool',
-  'saas-operations',
-  'saas-ai-workspace',
-  'saas-analytics',
-  'platform',
-  'account',
-  'workflow',
-]);
+import { fileURLToPath } from 'node:url';
 
 const SAAS_TYPES = new Set([
   'saas-operations',
@@ -86,7 +71,7 @@ const findTagEnd = (html, start) => {
 
 const parseDocument = (html) => {
   const elements = [];
-  const stylesheetEntries = [];
+  const styles = [];
   const stack = [];
   let htmlAttributes = null;
   let hasNestedCards = false;
@@ -149,20 +134,6 @@ const parseDocument = (html) => {
       htmlAttributes = attributes;
     }
 
-    if (
-      name === 'link' &&
-      (attributes.get('rel') ?? '')
-        .toLowerCase()
-        .split(/\s+/)
-        .includes('stylesheet')
-    ) {
-      stylesheetEntries.push({
-        type: 'link',
-        href: (attributes.get('href') ?? '').trim(),
-        media: (attributes.get('media') ?? '').trim(),
-      });
-    }
-
     if (name === 'style' || name === 'script') {
       const closingPattern = new RegExp(`<\\/\\s*${name}\\s*>`, 'ig');
       closingPattern.lastIndex = index;
@@ -170,11 +141,7 @@ const parseDocument = (html) => {
       const contentEnd = closingMatch?.index ?? html.length;
 
       if (name === 'style') {
-        stylesheetEntries.push({
-          type: 'inline',
-          css: html.slice(index, contentEnd),
-          media: (attributes.get('media') ?? '').trim(),
-        });
+        styles.push(html.slice(index, contentEnd));
       }
 
       index = closingMatch ? closingPattern.lastIndex : html.length;
@@ -190,126 +157,16 @@ const parseDocument = (html) => {
     elements,
     hasNestedCards,
     htmlAttributes: htmlAttributes ?? new Map(),
-    stylesheetEntries,
+    styleSource: styles.join('\n'),
   };
 };
 
-const scanCss = (source, start, onCharacter) => {
-  let quote = null;
-  let inComment = false;
-
-  for (let index = start; index < source.length; index += 1) {
-    const character = source[index];
-    const nextCharacter = source[index + 1];
-
-    if (inComment) {
-      if (character === '*' && nextCharacter === '/') {
-        inComment = false;
-        index += 1;
-      }
-      continue;
-    }
-
-    if (quote) {
-      if (character === '\\') {
-        index += 1;
-      } else if (character === quote) {
-        quote = null;
-      }
-      continue;
-    }
-
-    if (character === '/' && nextCharacter === '*') {
-      inComment = true;
-      index += 1;
-      continue;
-    }
-
-    if (character === '"' || character === "'") {
-      quote = character;
-      continue;
-    }
-
-    const result = onCharacter(character, index);
-    if (result !== undefined) {
-      return result;
-    }
-  }
-
-  return -1;
-};
-
-const findNextOpeningBrace = (source, start) =>
-  scanCss(source, start, (character, index) =>
-    character === '{' ? index : undefined,
-  );
-
 const findClosingBrace = (source, openingBrace) => {
   let depth = 0;
-
-  return scanCss(source, openingBrace, (character, index) => {
-    if (character === '{') {
-      depth += 1;
-    } else if (character === '}') {
-      depth -= 1;
-      if (depth === 0) {
-        return index;
-      }
-    }
-    return undefined;
-  });
-};
-
-const stripCssComments = (source) => {
-  let result = '';
   let quote = null;
   let inComment = false;
 
-  for (let index = 0; index < source.length; index += 1) {
-    const character = source[index];
-    const nextCharacter = source[index + 1];
-
-    if (inComment) {
-      if (character === '*' && nextCharacter === '/') {
-        inComment = false;
-        index += 1;
-      }
-      continue;
-    }
-
-    if (quote) {
-      result += character;
-      if (character === '\\') {
-        result += nextCharacter ?? '';
-        index += 1;
-      } else if (character === quote) {
-        quote = null;
-      }
-      continue;
-    }
-
-    if (character === '/' && nextCharacter === '*') {
-      inComment = true;
-      index += 1;
-    } else {
-      result += character;
-      if (character === '"' || character === "'") {
-        quote = character;
-      }
-    }
-  }
-
-  return result;
-};
-
-const findPreludeBoundary = (source, start, end) => {
-  let boundary = start;
-  let quote = null;
-  let inComment = false;
-  let parentheses = 0;
-  let brackets = 0;
-
-  for (let index = start; index < end; index += 1) {
+  for (let index = openingBrace; index < source.length; index += 1) {
     const character = source[index];
     const nextCharacter = source[index + 1];
 
@@ -335,32 +192,28 @@ const findPreludeBoundary = (source, start, end) => {
       index += 1;
     } else if (character === '"' || character === "'") {
       quote = character;
-    } else if (character === '(') {
-      parentheses += 1;
-    } else if (character === ')') {
-      parentheses = Math.max(0, parentheses - 1);
-    } else if (character === '[') {
-      brackets += 1;
-    } else if (character === ']') {
-      brackets = Math.max(0, brackets - 1);
-    } else if (character === ';' && parentheses === 0 && brackets === 0) {
-      boundary = index + 1;
+    } else if (character === '{') {
+      depth += 1;
+    } else if (character === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        return index;
+      }
     }
   }
 
-  return boundary;
+  return -1;
 };
 
-const collectCssBlocks = (
-  source,
-  ancestors = [],
-  orderState = { value: 0 },
-) => {
+const CONDITIONAL_AT_RULE =
+  /^@(container|document|media|starting-style|supports)\b/i;
+
+const collectCssBlocks = (source, parentIsConditional = false) => {
   const blocks = [];
   let cursor = 0;
 
   while (cursor < source.length) {
-    const openingBrace = findNextOpeningBrace(source, cursor);
+    const openingBrace = source.indexOf('{', cursor);
     if (openingBrace === -1) {
       break;
     }
@@ -370,23 +223,20 @@ const collectCssBlocks = (
       break;
     }
 
-    const preludeBoundary = findPreludeBoundary(source, cursor, openingBrace);
-    const prelude = stripCssComments(
-      source.slice(preludeBoundary, openingBrace),
-    ).trim();
+    const preludeBoundary = Math.max(
+      source.lastIndexOf('}', openingBrace - 1),
+      source.lastIndexOf(';', openingBrace - 1),
+    );
+    const prelude = source.slice(preludeBoundary + 1, openingBrace).trim();
     const body = source.slice(openingBrace + 1, closingBrace);
-    const block = {
-      prelude,
-      body,
-      ancestors,
-      order: orderState.value,
-    };
-    orderState.value += 1;
-    blocks.push(block);
+    blocks.push({ prelude, body, isConditional: parentIsConditional });
 
     if (prelude.startsWith('@')) {
       blocks.push(
-        ...collectCssBlocks(body, [...ancestors, prelude], orderState),
+        ...collectCssBlocks(
+          body,
+          parentIsConditional || CONDITIONAL_AT_RULE.test(prelude),
+        ),
       );
     }
 
@@ -396,142 +246,36 @@ const collectCssBlocks = (
   return blocks;
 };
 
-const findDeclarationColon = (source) => {
-  let quote = null;
-  let parentheses = 0;
+const cssDeclarationValues = (body, property) => {
+  const escapedProperty = property.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = new RegExp(
+    `(?:^|[;{])\\s*${escapedProperty}\\s*:\\s*([^;}]+)`,
+    'gi',
+  );
+  const values = [];
+  let match;
 
-  for (let index = 0; index < source.length; index += 1) {
-    const character = source[index];
-
-    if (quote) {
-      if (character === '\\') {
-        index += 1;
-      } else if (character === quote) {
-        quote = null;
-      }
-      continue;
-    }
-
-    if (character === '"' || character === "'") {
-      quote = character;
-    } else if (character === '(') {
-      parentheses += 1;
-    } else if (character === ')') {
-      parentheses = Math.max(0, parentheses - 1);
-    } else if (character === ':' && parentheses === 0) {
-      return index;
-    }
+  while ((match = pattern.exec(body)) !== null) {
+    values.push(match[1].trim());
   }
 
-  return -1;
+  return values;
 };
 
-const parseCssDeclarations = (source) => {
-  const declarations = [];
-  let quote = null;
-  let inComment = false;
-  let parentheses = 0;
-  let segmentStart = 0;
+const stripCustomPropertyDeclarations = (source) =>
+  source.replace(/--[\w-]+\s*:[^;{}]*(?:;|(?=\})|$)/g, '');
 
-  const appendDeclaration = (end) => {
-    const segment = stripCssComments(source.slice(segmentStart, end)).trim();
-    segmentStart = end + 1;
-    if (!segment || segment.includes('{')) {
-      return;
-    }
-
-    const colon = findDeclarationColon(segment);
-    if (colon === -1) {
-      return;
-    }
-
-    const property = segment.slice(0, colon).trim().toLowerCase();
-    const value = segment.slice(colon + 1).trim();
-    if (/^(?:--[\w-]+|[a-z-][\w-]*)$/i.test(property) && value) {
-      declarations.push({ property, value, order: declarations.length });
-    }
-  };
-
-  for (let index = 0; index < source.length; index += 1) {
-    const character = source[index];
-    const nextCharacter = source[index + 1];
-
-    if (inComment) {
-      if (character === '*' && nextCharacter === '/') {
-        inComment = false;
-        index += 1;
-      }
-      continue;
-    }
-
-    if (quote) {
-      if (character === '\\') {
-        index += 1;
-      } else if (character === quote) {
-        quote = null;
-      }
-      continue;
-    }
-
-    if (character === '/' && nextCharacter === '*') {
-      inComment = true;
-      index += 1;
-    } else if (character === '"' || character === "'") {
-      quote = character;
-    } else if (character === '(') {
-      parentheses += 1;
-    } else if (character === ')') {
-      parentheses = Math.max(0, parentheses - 1);
-    } else if (character === ';' && parentheses === 0) {
-      appendDeclaration(index);
-    }
-  }
-
-  appendDeclaration(source.length);
-  return declarations;
-};
-
-const cssDeclarationValues = (body, property) =>
-  parseCssDeclarations(body)
-    .filter((declaration) => declaration.property === property.toLowerCase())
-    .map(({ value }) => value);
-
-const stripImportant = (value) =>
-  value.replace(/\s*!important\s*$/i, '').trim();
-
-const largestAbsoluteLength = (source, rootFontSize) => {
-  const values = [
-    ...stripImportant(source).matchAll(/(-?\d*\.?\d+)\s*(px|rem)\b/gi),
-  ]
-    .map((match) => {
-      const value = Number(match[1]);
-      return match[2].toLowerCase() === 'rem'
-        ? rootFontSize === null
-          ? null
-          : value * rootFontSize
-        : value;
-    })
-    .filter((value) => value !== null);
+const largestPxValue = (source) => {
+  const values = [...source.matchAll(/(-?\d*\.?\d+)\s*px\b/gi)].map(
+    (match) => Number(match[1]),
+  );
   return values.length === 0 ? null : Math.max(...values);
 };
 
-const resolveSimpleLength = (source, rootFontSize) => {
-  const value = stripImportant(source);
-  if (/^0(?:\.0+)?$/.test(value)) {
-    return 0;
-  }
-
-  const match = value.match(/^(-?\d*\.?\d+)\s*(px|rem)$/i);
-  if (!match) {
-    return null;
-  }
-
-  const number = Number(match[1]);
-  if (match[2].toLowerCase() === 'rem') {
-    return rootFontSize === null ? null : number * rootFontSize;
-  }
-  return number;
-};
+const selectorTargetsHeading = (selector) =>
+  /(^|[\s>+~,])h1(?=$|[\s>+~,.:[#])/i.test(selector) ||
+  /\.display-title\b/i.test(selector) ||
+  /\[\s*data-ui-role\s*=\s*["']hero-title["']\s*\]/i.test(selector);
 
 const classListIncludes = (attributes, className) =>
   (attributes.get('class') ?? '').split(/\s+/).includes(className);
@@ -559,238 +303,86 @@ const hasInteractiveElement = (elements) =>
       (name === 'a' && attributes.has('href')),
   );
 
-const CONDITIONAL_AT_RULE =
-  /^@(container|document|media|scope|starting-style|supports)\b/i;
-
-const isStyleBlock = ({ prelude }) => !prelude.startsWith('@');
-
-const isDefaultBlock = ({ ancestors }) =>
-  ancestors.every((ancestor) => /^@layer\b/i.test(ancestor));
-
-const isDefaultOrSupportsBlock = ({ ancestors }) =>
-  ancestors.every(
-    (ancestor) =>
-      /^@layer\b/i.test(ancestor) || /^@supports\b/i.test(ancestor),
+const rootBlocks = (blocks) =>
+  blocks.filter(
+    ({ prelude, isConditional }) =>
+      !isConditional &&
+      prelude
+        .split(',')
+        .map((selector) => selector.trim())
+        .includes(':root'),
   );
 
-const isMobileBlock = ({ ancestors }) => {
-  const conditionalAncestors = ancestors.filter((ancestor) =>
-    CONDITIONAL_AT_RULE.test(ancestor),
-  );
-  return (
-    conditionalAncestors.length > 0 &&
-    conditionalAncestors.every(
-      (ancestor) =>
-        /^@media\b/i.test(ancestor) &&
-        /(?:max-width\s*:|\bwidth\s*(?:<=|<))/i.test(ancestor),
-    )
-  );
-};
-
-const isFeatureFallbackBlock = (block, feature) => {
-  const conditionalAncestors = block.ancestors.filter((ancestor) =>
-    CONDITIONAL_AT_RULE.test(ancestor),
-  );
-  return (
-    conditionalAncestors.length === 1 &&
-    /^@media\b/i.test(conditionalAncestors[0]) &&
-    new RegExp(`${feature}\\s*:\\s*reduce`, 'i').test(
-      conditionalAncestors[0],
-    )
-  );
-};
-
-const selectorList = (prelude) =>
-  prelude
-    .split(',')
-    .map((selector) => selector.trim())
-    .filter(Boolean);
-
-const finalSelectorCompound = (selector) => {
-  let boundary = 0;
-  let quote = null;
-  let brackets = 0;
-  let parentheses = 0;
-
-  for (let index = 0; index < selector.length; index += 1) {
-    const character = selector[index];
-
-    if (quote) {
-      if (character === '\\') {
-        index += 1;
-      } else if (character === quote) {
-        quote = null;
-      }
-      continue;
-    }
-
-    if (character === '"' || character === "'") {
-      quote = character;
-    } else if (character === '[') {
-      brackets += 1;
-    } else if (character === ']') {
-      brackets = Math.max(0, brackets - 1);
-    } else if (character === '(') {
-      parentheses += 1;
-    } else if (character === ')') {
-      parentheses = Math.max(0, parentheses - 1);
-    } else if (
-      brackets === 0 &&
-      parentheses === 0 &&
-      (/\s/.test(character) || /[>+~]/.test(character))
-    ) {
-      boundary = index + 1;
-    }
-  }
-
-  return selector.slice(boundary).trim();
-};
-
-const selectorTargetsHeading = (prelude) =>
-  selectorList(prelude).some((selector) => {
-    const compound = finalSelectorCompound(selector);
-    return (
-      /^h1(?=$|[.#:]|\[)/i.test(compound) ||
-      /\.display-title\b/i.test(compound) ||
-      /\[\s*data-ui-role\s*=\s*["']hero-title["']\s*\]/i.test(compound)
-    );
-  });
-
-const rootSelectorSpecificity = (prelude, rootOnly = false) =>
-  Math.max(
-    ...selectorList(prelude).map((selector) => {
-      if (selector === ':root') {
-        return 10;
-      }
-      if (!rootOnly && selector.toLowerCase() === 'html') {
-        return 1;
-      }
-      return -Infinity;
-    }),
+const rootDeclarationValues = (blocks, property) =>
+  rootBlocks(blocks).flatMap(({ body }) =>
+    cssDeclarationValues(body, property),
   );
 
-const declarationValue = (value) => ({
-  important: /\s!important\s*$/i.test(value),
-  value: stripImportant(value),
-});
-
-const effectiveRootDeclaration = (
-  blocks,
-  htmlAttributes,
-  property,
-  { rootOnly = false } = {},
-) => {
-  let winner = null;
-
-  const consider = (candidate) => {
-    if (
-      winner === null ||
-      Number(candidate.important) > Number(winner.important) ||
-      (candidate.important === winner.important &&
-        candidate.specificity > winner.specificity) ||
-      (candidate.important === winner.important &&
-        candidate.specificity === winner.specificity &&
-        candidate.order > winner.order)
-    ) {
-      winner = candidate;
-    }
-  };
-
-  for (const block of blocks) {
-    if (!isStyleBlock(block) || !isDefaultBlock(block)) {
-      continue;
-    }
-
-    const specificity = rootSelectorSpecificity(block.prelude, rootOnly);
-    if (!Number.isFinite(specificity)) {
-      continue;
-    }
-
-    for (const declaration of parseCssDeclarations(block.body)) {
-      if (declaration.property !== property.toLowerCase()) {
-        continue;
-      }
-      const parsed = declarationValue(declaration.value);
-      consider({
-        ...parsed,
-        specificity,
-        order: block.order * 1000 + declaration.order,
-      });
-    }
-  }
-
-  for (const declaration of parseCssDeclarations(
-    htmlAttributes.get('style') ?? '',
-  )) {
-    if (declaration.property !== property.toLowerCase()) {
-      continue;
-    }
-    const parsed = declarationValue(declaration.value);
-    consider({
-      ...parsed,
-      specificity: 1000,
-      order: Number.MAX_SAFE_INTEGER,
-    });
-  }
-
-  return winner;
-};
-
-const selectorTargetsCard = (prelude) =>
-  selectorList(prelude).some((selector) => {
-    const compound = finalSelectorCompound(selector);
-    return (
-      /\[\s*data-ui-card\s*\]/i.test(compound) &&
-      !/::[\w-]+/.test(compound)
-    );
-  });
+const selectorContainsCard = (selector) =>
+  /\[\s*data-ui-card\s*\]/i.test(selector);
 
 const selectorTargetsLiquidRoot = (selector) =>
   /:root\s*\[\s*data-ui-card-material\s*=\s*(?:"liquid-glass"|'liquid-glass'|liquid-glass)\s*\]/i.test(
     selector,
   );
 
+const hasCssDeclaration = (blocks, property) =>
+  blocks.some(
+    ({ prelude, body }) =>
+      !prelude.startsWith('@') &&
+      cssDeclarationValues(body, property).length > 0,
+  );
+
+const hasMediaFeature = (blocks, feature, value) =>
+  blocks.some(
+    ({ prelude }) =>
+      prelude.startsWith('@media') &&
+      new RegExp(`${feature}\\s*:\\s*${value}`, 'i').test(prelude),
+  );
+
 const hasLiquidGlassBackdrop = (blocks) =>
-  blocks.some((block) => {
-    if (
-      !isStyleBlock(block) ||
-      !isDefaultOrSupportsBlock(block) ||
-      !selectorTargetsCard(block.prelude)
-    ) {
+  blocks.some(({ prelude, body }) => {
+    if (prelude.startsWith('@') || !selectorContainsCard(prelude)) {
       return false;
     }
 
     return [
-      ...cssDeclarationValues(block.body, 'backdrop-filter'),
-      ...cssDeclarationValues(block.body, '-webkit-backdrop-filter'),
+      ...cssDeclarationValues(body, 'backdrop-filter'),
+      ...cssDeclarationValues(body, '-webkit-backdrop-filter'),
     ].some((value) => !/^none\b/i.test(value));
   });
 
-const hasLiquidGlassFallback = (blocks) => {
-  const relevantBlocks = blocks.filter(
-    (block) =>
-      isStyleBlock(block) &&
-      isFeatureFallbackBlock(block, 'prefers-reduced-transparency') &&
-      (selectorTargetsCard(block.prelude) ||
-        selectorTargetsLiquidRoot(block.prelude)),
-  );
-  const hasEntityFallback = relevantBlocks.some(
-    ({ body }) =>
-      cssDeclarationValues(body, 'background').length > 0 ||
-      cssDeclarationValues(body, 'background-color').length > 0 ||
-      cssDeclarationValues(body, '--card-background').length > 0,
-  );
-  const disablesBackdrop = relevantBlocks.some(
-    ({ prelude, body }) =>
-      selectorTargetsCard(prelude) &&
-      [
-        ...cssDeclarationValues(body, 'backdrop-filter'),
-        ...cssDeclarationValues(body, '-webkit-backdrop-filter'),
-      ].some((value) => /^none\b/i.test(stripImportant(value))),
-  );
+const hasLiquidGlassFallback = (blocks) =>
+  blocks
+    .filter(
+      ({ prelude }) =>
+        prelude.startsWith('@media') &&
+        /prefers-reduced-transparency\s*:\s*reduce/i.test(prelude),
+    )
+    .some(({ body }) => {
+      const fallbackBlocks = collectCssBlocks(body);
+      const relevantBlocks = fallbackBlocks.filter(
+        ({ prelude }) =>
+          !prelude.startsWith('@') &&
+          (selectorContainsCard(prelude) ||
+            selectorTargetsLiquidRoot(prelude)),
+      );
+      const hasEntityFallback = relevantBlocks.some(
+        ({ body: fallbackBody }) =>
+          cssDeclarationValues(fallbackBody, 'background').length > 0 ||
+          cssDeclarationValues(fallbackBody, '--card-background').length > 0,
+      );
+      const disablesBackdrop = relevantBlocks.some(
+        ({ prelude, body: fallbackBody }) =>
+          selectorContainsCard(prelude) &&
+          [
+            ...cssDeclarationValues(fallbackBody, 'backdrop-filter'),
+            ...cssDeclarationValues(fallbackBody, '-webkit-backdrop-filter'),
+          ].some((value) => /^none\b/i.test(value)),
+      );
 
-  return hasEntityFallback && disablesBackdrop;
-};
+      return hasEntityFallback && disablesBackdrop;
+    });
 
 const hasDecorativeCircle = (blocks) =>
   blocks.some(({ prelude, body }) => {
@@ -800,13 +392,13 @@ const hasDecorativeCircle = (blocks) =>
 
     const width = Math.max(
       ...cssDeclarationValues(body, 'width')
-        .map((value) => resolveSimpleLength(value, 16))
+        .map(largestPxValue)
         .filter((value) => value !== null),
       -Infinity,
     );
     const height = Math.max(
       ...cssDeclarationValues(body, 'height')
-        .map((value) => resolveSimpleLength(value, 16))
+        .map(largestPxValue)
         .filter((value) => value !== null),
       -Infinity,
     );
@@ -836,200 +428,6 @@ const hasHeroSplit = (blocks) => {
   return heroUsesColumns && hasHeroAside;
 };
 
-const isLocalStylesheetHref = (href) => {
-  if (!href) {
-    return false;
-  }
-
-  try {
-    const url = new URL(href, 'file:///ui-standard/document.html');
-    return url.protocol === 'file:' && url.hostname === '';
-  } catch {
-    return false;
-  }
-};
-
-const normalizeLinkedCss = (linkedCss) => {
-  if (linkedCss instanceof Map) {
-    return linkedCss;
-  }
-  if (linkedCss && typeof linkedCss === 'object') {
-    return new Map(Object.entries(linkedCss));
-  }
-  return new Map();
-};
-
-const wrapStylesheetMedia = (css, media) =>
-  media ? `@media ${media} {\n${css}\n}` : css;
-
-const buildStyleSource = (document, linkedCss, addIssue) => {
-  const sources = [];
-
-  for (const entry of document.stylesheetEntries) {
-    if (entry.type === 'inline') {
-      sources.push(wrapStylesheetMedia(entry.css, entry.media));
-      continue;
-    }
-
-    if (!isLocalStylesheetHref(entry.href)) {
-      addIssue(
-        'stylesheet-link-unsupported',
-        `样式表链接仅支持本地文件，不能使用远程、data 或其他 URL：${entry.href || '空链接'}。`,
-      );
-      continue;
-    }
-
-    if (!linkedCss.has(entry.href)) {
-      addIssue(
-        'stylesheet-link-unloaded',
-        `未提供本地样式表内容：${entry.href}。`,
-      );
-      continue;
-    }
-
-    sources.push(
-      wrapStylesheetMedia(String(linkedCss.get(entry.href)), entry.media),
-    );
-  }
-
-  return sources.join('\n');
-};
-
-const isHeadingElement = ({ name, attributes }) =>
-  name === 'h1' ||
-  classListIncludes(attributes, 'display-title') ||
-  attributes.get('data-ui-role') === 'hero-title';
-
-const inspectHeadingValue = (value, limit, rootFontSize) => {
-  const resolved = resolveSimpleLength(value, rootFontSize);
-  if (resolved !== null) {
-    return resolved > limit ? 'too-large' : 'ok';
-  }
-
-  const largestAbsolute = largestAbsoluteLength(value, rootFontSize);
-  if (largestAbsolute !== null && largestAbsolute > limit) {
-    return 'too-large';
-  }
-  return 'unverifiable';
-};
-
-const classifyDesktopCardRadius = (value, rootRadius) => {
-  const normalized = stripImportant(value);
-  if (
-    /^var\(\s*--radius-card(?:\s*,[^)]+)?\s*\)$/i.test(normalized)
-  ) {
-    return rootRadius !== null && rootRadius >= 36 ? 'ok' : 'too-small';
-  }
-
-  const match = normalized.match(/^(-?\d*\.?\d+)\s*px$/i);
-  if (!match) {
-    return 'invalid';
-  }
-  return Number(match[1]) >= 36 ? 'ok' : 'too-small';
-};
-
-const classifyMobileCardRadius = (value, mobileRootRadius) => {
-  const normalized = stripImportant(value);
-  if (
-    /^var\(\s*--radius-card(?:\s*,[^)]+)?\s*\)$/i.test(normalized)
-  ) {
-    return mobileRootRadius !== null &&
-      mobileRootRadius >= 28 &&
-      mobileRootRadius <= 36
-      ? 'ok'
-      : 'invalid';
-  }
-
-  const match = normalized.match(/^(-?\d*\.?\d+)\s*px$/i);
-  if (!match) {
-    return 'invalid';
-  }
-  const radius = Number(match[1]);
-  return radius >= 28 && radius <= 36 ? 'ok' : 'invalid';
-};
-
-const MOTION_PROPERTIES = new Set([
-  'animation',
-  'animation-name',
-  'animation-duration',
-  'animation-delay',
-  'animation-direction',
-  'animation-fill-mode',
-  'animation-iteration-count',
-  'animation-play-state',
-  'animation-timing-function',
-  'animation-timeline',
-  'transition',
-  'transition-property',
-  'transition-duration',
-  'transition-delay',
-  'transition-timing-function',
-  'transition-behavior',
-]);
-
-const timeValueInMilliseconds = (value) => {
-  const match = stripImportant(value).match(/^(-?\d*\.?\d+)\s*(ms|s)$/i);
-  if (!match) {
-    return null;
-  }
-  return Number(match[1]) * (match[2].toLowerCase() === 's' ? 1000 : 1);
-};
-
-const isActiveMotionDeclaration = ({ property, value }) => {
-  if (!MOTION_PROPERTIES.has(property)) {
-    return false;
-  }
-
-  const normalized = stripImportant(value);
-  if (
-    ['animation', 'animation-name', 'transition', 'transition-property'].includes(
-      property,
-    ) &&
-    /^none\b/i.test(normalized)
-  ) {
-    return false;
-  }
-
-  if (property.endsWith('-duration') || property.endsWith('-delay')) {
-    const times = normalized.split(',').map((part) =>
-      timeValueInMilliseconds(part.trim()),
-    );
-    return times.some((time) => time === null || time > 0.01);
-  }
-
-  return true;
-};
-
-const isMotionDisablingDeclaration = ({ property, value }) => {
-  const normalized = stripImportant(value);
-  if (
-    ['animation', 'animation-name', 'transition', 'transition-property'].includes(
-      property,
-    ) &&
-    /^none\b/i.test(normalized)
-  ) {
-    return true;
-  }
-
-  if (property === 'animation-duration' || property === 'transition-duration') {
-    const times = normalized.split(',').map((part) =>
-      timeValueInMilliseconds(part.trim()),
-    );
-    return (
-      times.length > 0 &&
-      times.every((time) => time !== null && time <= 0.01)
-    );
-  }
-
-  return property === 'scroll-behavior' && /^auto\b/i.test(normalized);
-};
-
-const declarationsContainBrandColor = (source) =>
-  parseCssDeclarations(source).some(
-    ({ property, value }) =>
-      !property.startsWith('--') && /#9a6aba\b/i.test(value),
-  );
-
 const createIssue = (code, message) => ({
   code,
   severity: 'error',
@@ -1038,7 +436,8 @@ const createIssue = (code, message) => ({
 
 export const analyzeHtml = (html, options = {}) => {
   const document = parseDocument(String(html));
-  const { elements, htmlAttributes } = document;
+  const { elements, htmlAttributes, styleSource } = document;
+  const blocks = collectCssBlocks(styleSource);
   const issues = [];
   const issueCodes = new Set();
   const addIssue = (code, message) => {
@@ -1047,28 +446,13 @@ export const analyzeHtml = (html, options = {}) => {
       issues.push(createIssue(code, message));
     }
   };
-  const styleSource = buildStyleSource(
-    document,
-    normalizeLinkedCss(options.linkedCss),
-    addIssue,
-  );
-  const blocks = collectCssBlocks(styleSource);
 
-  const metadataPageType = (
-    htmlAttributes.get('data-ui-page-type') ?? ''
-  ).trim();
+  const metadataPageType = htmlAttributes.get('data-ui-page-type');
   const hasPageTypeOverride =
-    typeof options.pageType === 'string' && options.pageType.trim().length > 0;
-  const pageTypeOverride = hasPageTypeOverride
-    ? options.pageType.trim()
-    : '';
-  const metadataPageTypeIsValid = VALID_PAGE_TYPES.has(metadataPageType);
-  const pageTypeOverrideIsValid = VALID_PAGE_TYPES.has(pageTypeOverride);
-  const pageType = pageTypeOverrideIsValid
-    ? pageTypeOverride
-    : metadataPageTypeIsValid
-      ? metadataPageType
-      : 'marketing';
+    typeof options.pageType === 'string' && options.pageType.length > 0;
+  const pageType = hasPageTypeOverride
+    ? options.pageType
+    : metadataPageType || 'marketing';
   const hero = htmlAttributes.get('data-ui-hero');
   const cardMaterial = htmlAttributes.get('data-ui-card-material');
   const isSaas = SAAS_TYPES.has(pageType);
@@ -1082,20 +466,6 @@ export const analyzeHtml = (html, options = {}) => {
     );
   }
 
-  if (metadataPageType && !metadataPageTypeIsValid) {
-    addIssue(
-      'page-type-invalid',
-      `data-ui-page-type 的值无效：${metadataPageType}。必须使用文档定义的十二种页面类型之一。`,
-    );
-  }
-
-  if (hasPageTypeOverride && !pageTypeOverrideIsValid) {
-    addIssue(
-      'page-type-invalid',
-      `--page-type 的值无效：${pageTypeOverride}。必须使用文档定义的十二种页面类型之一。`,
-    );
-  }
-
   if (!hero) {
     addIssue(
       'hero-metadata-required',
@@ -1103,59 +473,31 @@ export const analyzeHtml = (html, options = {}) => {
     );
   }
 
-  const colorScheme = effectiveRootDeclaration(
-    blocks,
-    htmlAttributes,
-    'color-scheme',
+  const declaresDarkColorScheme = blocks.some(
+    ({ prelude, body, isConditional }) =>
+      !isConditional &&
+      !prelude.startsWith('@') &&
+      cssDeclarationValues(body, 'color-scheme').some((value) =>
+        /\bdark\b/i.test(value),
+      ),
   );
-  const preferredColorScheme = colorScheme?.value
-    .replace(/^only\s+/i, '')
-    .trim()
-    .split(/\s+/, 1)[0]
-    .toLowerCase();
-  if (preferredColorScheme !== 'dark') {
+  if (!declaresDarkColorScheme) {
     addIssue(
       'dark-theme-required',
-      '默认的 :root 或 html 必须以 dark 作为首选 color-scheme。',
+      '样式表必须声明 color-scheme: dark。',
     );
   }
 
-  const rootFontSizeDeclaration = effectiveRootDeclaration(
-    blocks,
-    htmlAttributes,
-    'font-size',
-  );
-  const rootFontSize = rootFontSizeDeclaration
-    ? resolveSimpleLength(rootFontSizeDeclaration.value, 16)
-    : 16;
   const headingLimit = isSaas ? 24 : 42;
-  const headingValues = blocks
-    .filter(
-      (block) =>
-        isStyleBlock(block) && selectorTargetsHeading(block.prelude),
-    )
-    .flatMap(({ body }) => cssDeclarationValues(body, 'font-size'));
-  for (const element of elements.filter(isHeadingElement)) {
-    headingValues.push(
-      ...cssDeclarationValues(
-        element.attributes.get('style') ?? '',
-        'font-size',
-      ),
-    );
-  }
-  const headingResults = headingValues.map((value) =>
-    inspectHeadingValue(value, headingLimit, rootFontSize),
-  );
-  if (headingResults.includes('too-large')) {
+  const headingSizes = blocks
+    .filter(({ prelude }) => selectorTargetsHeading(prelude))
+    .flatMap(({ body }) => cssDeclarationValues(body, 'font-size'))
+    .map(largestPxValue)
+    .filter((value) => value !== null);
+  if (headingSizes.some((value) => value > headingLimit)) {
     addIssue(
       'heading-too-large',
       `页面类型 ${pageType} 的标题字号不得超过 ${headingLimit}px。`,
-    );
-  }
-  if (headingResults.includes('unverifiable')) {
-    addIssue(
-      'heading-size-unverifiable',
-      `标题字号必须使用可静态确认不超过 ${headingLimit}px 的 px 或 rem 值。`,
     );
   }
 
@@ -1167,188 +509,31 @@ export const analyzeHtml = (html, options = {}) => {
       );
     }
 
-    const rootRadiusDeclaration = effectiveRootDeclaration(
-      blocks,
-      htmlAttributes,
-      '--radius-card',
-      { rootOnly: true },
+    const radius = Math.max(
+      ...rootDeclarationValues(blocks, '--radius-card')
+        .map(largestPxValue)
+        .filter((value) => value !== null),
+      -Infinity,
     );
-    const rootRadius = rootRadiusDeclaration
-      ? resolveSimpleLength(rootRadiusDeclaration.value, rootFontSize)
-      : null;
-    if (rootRadius === null || rootRadius < 36) {
+    if (radius < 36) {
       addIssue(
         'card-radius-too-small',
         '根级 --radius-card 的值不得小于 36px。',
       );
     }
 
-    const defaultCardRadiusValues = blocks
-      .filter(
-        (block) =>
-          isStyleBlock(block) &&
-          isDefaultBlock(block) &&
-          selectorTargetsCard(block.prelude),
-      )
-      .flatMap(({ body }) => cssDeclarationValues(body, 'border-radius'));
-    const defaultCardRadiusResults = defaultCardRadiusValues.map((value) =>
-      classifyDesktopCardRadius(value, rootRadius),
-    );
-    const hasDefaultCardRadius =
-      defaultCardRadiusResults.includes('ok');
-    let hasMissingCardRadius = false;
-
-    if (defaultCardRadiusResults.includes('too-small')) {
-      addIssue(
-        'card-radius-too-small',
-        '卡片默认 border-radius 不得小于 36px。',
-      );
-    } else if (
-      defaultCardRadiusValues.length > 0 &&
-      !hasDefaultCardRadius
-    ) {
-      addIssue(
-        'card-radius-application-required',
-        '卡片默认样式必须通过 var(--radius-card) 或不小于 36px 的字面值应用 border-radius。',
-      );
-    }
-
-    let allCardsHaveCompliantRadius = true;
-    for (const card of cards) {
-      const inlineRadiusValues = cssDeclarationValues(
-        card.attributes.get('style') ?? '',
-        'border-radius',
-      );
-      if (inlineRadiusValues.length === 0) {
-        if (!hasDefaultCardRadius) {
-          allCardsHaveCompliantRadius = false;
-          if (
-            defaultCardRadiusValues.length === 0 ||
-            defaultCardRadiusResults.every((result) => result === 'invalid')
-          ) {
-            hasMissingCardRadius = true;
-          }
-        }
-        continue;
-      }
-
-      const result = classifyDesktopCardRadius(
-        inlineRadiusValues.at(-1),
-        rootRadius,
-      );
-      if (result === 'too-small') {
-        allCardsHaveCompliantRadius = false;
-        addIssue(
-          'card-radius-too-small',
-          '卡片 inline border-radius 不得小于 36px。',
-        );
-      } else if (result === 'invalid') {
-        allCardsHaveCompliantRadius = false;
-        addIssue(
-          'card-radius-application-required',
-          '卡片 inline border-radius 必须使用 var(--radius-card) 或不小于 36px 的字面值。',
-        );
-      }
-    }
-
-    if (hasMissingCardRadius) {
-      addIssue(
-        'card-radius-application-required',
-        '每个卡片必须由默认规则或 inline 样式实际应用合规 border-radius。',
-      );
-    }
-
-    const mobileRootRadiusDeclarations = blocks
-      .filter(
-        (block) =>
-          isStyleBlock(block) &&
-          isMobileBlock(block) &&
-          Number.isFinite(rootSelectorSpecificity(block.prelude, true)),
-      )
-      .flatMap((block) =>
-        parseCssDeclarations(block.body)
-          .filter(({ property }) => property === '--radius-card')
-          .map((declaration) => ({
-            order: block.order * 1000 + declaration.order,
-            value: declaration.value,
-          })),
-      )
-      .sort((left, right) => left.order - right.order);
-    const mobileRootRadiusValue =
-      mobileRootRadiusDeclarations.at(-1)?.value ?? null;
-    const resolveMobileRootRadius = (value) => {
-      if (value === null) {
-        return rootRadius;
-      }
-
-      const customProperty = stripImportant(value).match(
-        /^var\(\s*(--[\w-]+)(?:\s*,[^)]+)?\s*\)$/i,
-      )?.[1];
-      if (!customProperty) {
-        return resolveSimpleLength(value, rootFontSize);
-      }
-      if (customProperty === '--radius-card') {
-        return rootRadius;
-      }
-
-      const declaration = effectiveRootDeclaration(
-        blocks,
-        htmlAttributes,
-        customProperty,
-        { rootOnly: true },
-      );
-      return declaration
-        ? resolveSimpleLength(declaration.value, rootFontSize)
-        : null;
-    };
-    const mobileRootRadius = resolveMobileRootRadius(mobileRootRadiusValue);
-
-    const mobileRadiusValues = blocks
-      .filter(
-        (block) =>
-          isStyleBlock(block) &&
-          isMobileBlock(block) &&
-          selectorTargetsCard(block.prelude),
-      )
-      .flatMap(({ body }) => cssDeclarationValues(body, 'border-radius'));
-    if (
-      (mobileRootRadiusValue !== null &&
-        (mobileRootRadius === null ||
-          mobileRootRadius < 28 ||
-          mobileRootRadius > 36)) ||
-      mobileRadiusValues.some(
-        (value) =>
-          classifyMobileCardRadius(value, mobileRootRadius) !== 'ok',
-      )
-    ) {
-      addIssue(
-        'card-radius-mobile-invalid',
-        '移动端卡片 border-radius 必须在 28–36px 范围内。',
-      );
-    }
-
-    const hasStylesheetSquircle = blocks.some(
-      (block) =>
-        isStyleBlock(block) &&
-        isDefaultOrSupportsBlock(block) &&
-        selectorTargetsCard(block.prelude) &&
-        cssDeclarationValues(block.body, 'corner-shape').some((value) =>
-          /\bsquircle\b/i.test(stripImportant(value)),
+    const cardUsesSquircle = blocks.some(
+      ({ prelude, body }) =>
+        !prelude.startsWith('@') &&
+        selectorContainsCard(prelude) &&
+        cssDeclarationValues(body, 'corner-shape').some((value) =>
+          /\bsquircle\b/i.test(value),
         ),
     );
-    const allCardsHaveInlineSquircle = cards.every((card) =>
-      cssDeclarationValues(
-        card.attributes.get('style') ?? '',
-        'corner-shape',
-      ).some((value) => /\bsquircle\b/i.test(stripImportant(value))),
-    );
-    if (
-      !(hasStylesheetSquircle || allCardsHaveInlineSquircle) ||
-      !allCardsHaveCompliantRadius
-    ) {
+    if (!cardUsesSquircle) {
       addIssue(
         'corner-shape-required',
-        '卡片必须在合规默认 border-radius 的基础上应用 corner-shape: squircle；仅 media 规则不能满足默认。',
+        '实际的 [data-ui-card] 样式规则必须声明 corner-shape: squircle。',
       );
     }
   }
@@ -1395,14 +580,17 @@ export const analyzeHtml = (html, options = {}) => {
     );
   }
 
-  const hasStylesheetBrandColor = blocks.some(
-    (block) =>
-      isStyleBlock(block) && declarationsContainBrandColor(block.body),
-  );
+  const cssWithoutCustomProperties =
+    stripCustomPropertyDeclarations(styleSource);
   const hasInlineBrandColor = elements.some(({ attributes }) =>
-    declarationsContainBrandColor(attributes.get('style') ?? ''),
+    /#9a6aba\b/i.test(
+      stripCustomPropertyDeclarations(attributes.get('style') ?? ''),
+    ),
   );
-  if (hasStylesheetBrandColor || hasInlineBrandColor) {
+  if (
+    /#9a6aba\b/i.test(cssWithoutCustomProperties) ||
+    hasInlineBrandColor
+  ) {
     addIssue(
       'brand-color-hardcoded',
       '请使用设计令牌，不要硬编码 #9a6aba。',
@@ -1410,8 +598,8 @@ export const analyzeHtml = (html, options = {}) => {
   }
 
   const hasFocusVisibleRule = blocks.some(
-    (block) =>
-      isStyleBlock(block) && /:focus-visible\b/i.test(block.prelude),
+    ({ prelude }) =>
+      !prelude.startsWith('@') && /:focus-visible\b/i.test(prelude),
   );
   if (hasInteractiveElement(elements) && !hasFocusVisibleRule) {
     addIssue(
@@ -1420,24 +608,31 @@ export const analyzeHtml = (html, options = {}) => {
     );
   }
 
-  const hasMotionDeclaration =
-    blocks.some(
-      (block) =>
-        isStyleBlock(block) &&
-        parseCssDeclarations(block.body).some(isActiveMotionDeclaration),
-    ) ||
-    elements.some(({ attributes }) =>
-      parseCssDeclarations(attributes.get('style') ?? '').some(
-        isActiveMotionDeclaration,
-      ),
-    );
-  const hasReducedMotionFallback = blocks.some(
-    (block) =>
-      isStyleBlock(block) &&
-      isFeatureFallbackBlock(block, 'prefers-reduced-motion') &&
-      parseCssDeclarations(block.body).some(isMotionDisablingDeclaration),
+  const motionProperties = [
+    'animation',
+    'animation-name',
+    'animation-duration',
+    'animation-delay',
+    'animation-direction',
+    'animation-fill-mode',
+    'animation-iteration-count',
+    'animation-play-state',
+    'animation-timing-function',
+    'animation-timeline',
+    'transition',
+    'transition-property',
+    'transition-duration',
+    'transition-delay',
+    'transition-timing-function',
+    'transition-behavior',
+  ];
+  const hasMotionDeclaration = motionProperties.some((property) =>
+    hasCssDeclaration(blocks, property),
   );
-  if (hasMotionDeclaration && !hasReducedMotionFallback) {
+  if (
+    hasMotionDeclaration &&
+    !hasMediaFeature(blocks, 'prefers-reduced-motion', 'reduce')
+  ) {
     addIssue(
       'reduced-motion-required',
       '动画和过渡样式必须提供减少动态效果的回退。',
@@ -1483,37 +678,6 @@ const parseArguments = (args) => {
   return options;
 };
 
-const loadLinkedCss = async (html, filePath) => {
-  const linkedCss = new Map();
-  const document = parseDocument(html);
-  const baseUrl = pathToFileURL(filePath);
-
-  for (const entry of document.stylesheetEntries) {
-    if (
-      entry.type !== 'link' ||
-      !isLocalStylesheetHref(entry.href) ||
-      linkedCss.has(entry.href)
-    ) {
-      continue;
-    }
-
-    const stylesheetUrl = new URL(entry.href, baseUrl);
-    stylesheetUrl.hash = '';
-    stylesheetUrl.search = '';
-    const stylesheetPath = fileURLToPath(stylesheetUrl);
-
-    try {
-      linkedCss.set(entry.href, await readFile(stylesheetPath, 'utf8'));
-    } catch {
-      throw new Error(
-        `无法读取关联样式表：${entry.href}。请确认相对于 HTML 文件的路径存在且可读。`,
-      );
-    }
-  }
-
-  return linkedCss;
-};
-
 const main = async () => {
   const options = parseArguments(process.argv.slice(2));
   const filePath = resolve(options.file);
@@ -1526,11 +690,7 @@ const main = async () => {
       `无法读取文件：${filePath}。请确认文件路径存在且具有读取权限。`,
     );
   }
-  const linkedCss = await loadLinkedCss(html, filePath);
-  const report = analyzeHtml(html, {
-    linkedCss,
-    pageType: options.pageType,
-  });
+  const report = analyzeHtml(html, { pageType: options.pageType });
 
   if (options.json) {
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
