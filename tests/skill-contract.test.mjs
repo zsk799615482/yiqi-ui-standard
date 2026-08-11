@@ -160,17 +160,54 @@ test('Hero rules constrain type scale and reject decorative split layouts', asyn
       skill.indexOf('第 3 步：Hero / No Hero'),
     'product profiling must precede Hero / No Hero routing',
   );
+  assert.match(
+    skill,
+    /根据当前页面任务自动选择 Hero 或 No Hero/,
+  );
+  assert.match(skill, /允许用户覆盖/);
+  assert.match(skill, /不得默认生成左右分栏 Hero/);
+
+  assert.match(hero, /按页面类型自动选择 Hero 或 No Hero/);
+  assert.match(hero, /允许用户覆盖/);
+  assert.match(hero, /持续操作、数据或任务壳层默认使用 No Hero/);
+
+  const allowedHeroPages = [
+    '品牌官网',
+    '产品介绍',
+    '发布页面',
+    '部分低密度服务页',
+  ];
+
+  for (const page of allowedHeroPages) {
+    assert.match(
+      hero,
+      new RegExp(page),
+      `missing allowed Hero page: ${page}`,
+    );
+  }
 
   assert.match(hero, /36–42px/);
   assert.match(hero, /30–36px/);
+  assert.match(hero, /H1 使用品牌、产品名或明确服务类别/);
+  assert.match(hero, /同一视口不连续出现多个 H1/);
+  assert.match(hero, /字号不得随视口无限放大/);
+
   assert.match(hero, /真实产品或对象的?全幅媒体/);
   assert.match(hero, /可检查的?产品界面或工作状态/);
   assert.match(hero, /编辑式内容构图/);
-  assert.match(hero, /默认左右文案\/装饰图分栏/);
-  assert.match(hero, /大型抽象圆形/);
+
+  assert.match(hero, /品牌或产品必须成为第一信号/);
   assert.match(hero, /首屏[\s\S]*露出下一业务内容/);
+  assert.match(hero, /主要视觉承载产品、服务过程或真实状态/);
+  assert.match(hero, /无真实素材时采用内容主导的构图，并输出素材需求/);
   assert.match(hero, /data-ui-hero-media/);
   assert.match(hero, /data-ui-product-state/);
+
+  assert.match(hero, /默认左右文案\/装饰图分栏/);
+  assert.match(hero, /大型抽象圆形、轨道、光球和无信息几何/);
+  assert.match(hero, /装饰图冒充产品视觉/);
+  assert.match(hero, /Hero 主内容放进装饰卡片/);
+  assert.match(hero, /超大标题和大空白代替层级/);
 });
 
 test('operational products route to No Hero', async () => {
@@ -191,4 +228,9 @@ test('operational products route to No Hero', async () => {
       `missing No Hero product route: ${product}`,
     );
   }
+
+  assert.match(
+    hero,
+    /No Hero 页面直接显示导航、当前任务、数据、状态和主要操作/,
+  );
 });
