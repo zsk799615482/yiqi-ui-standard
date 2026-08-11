@@ -79,7 +79,7 @@
     "status": {
       "info": {
         "background": "rgba(154, 106, 186, 0.16)",
-        "foreground": "{colors.primary.500}"
+        "foreground": "#D7BCE8"
       },
       "warning": {
         "background": "{darkColors.subtle}",

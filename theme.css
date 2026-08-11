@@ -90,7 +90,7 @@
 
   /* Status aliases. Warning intentionally adds no new chromatic color. */
   --color-info-bg: rgba(154, 106, 186, 0.16);
-  --color-info-text: var(--color-primary-500);
+  --color-info-text: #d7bce8;
   --color-warning-bg: var(--color-dark-subtle);
   --color-warning-text: var(--color-dark-text-primary);
   --color-warning-icon: var(--color-primary-500);
@@ -121,16 +121,16 @@
   --text-marketing-h1-max: 42px;
   --text-marketing-h1-mobile-min: 30px;
   --text-marketing-h1-mobile-max: 36px;
-  --text-page-title-min: 28px;
-  --text-page-title-max: 32px;
+  --text-page-title-desktop-min: 28px;
+  --text-page-title-desktop-max: 32px;
   --text-page-title-mobile-min: 24px;
   --text-page-title-mobile-max: 28px;
-  --text-section-title-min: 22px;
-  --text-section-title-max: 24px;
+  --text-section-title-desktop-min: 22px;
+  --text-section-title-desktop-max: 24px;
   --text-section-title-mobile-min: 20px;
   --text-section-title-mobile-max: 22px;
-  --text-card-title-min: 16px;
-  --text-card-title-max: 20px;
+  --text-card-title-desktop-min: 16px;
+  --text-card-title-desktop-max: 20px;
   --text-card-title-mobile-min: 16px;
   --text-card-title-mobile-max: 18px;
   --text-saas-page-title-min: 20px;
@@ -229,6 +229,7 @@
 :root[data-ui-card-material="liquid-glass"] {
   --card-background: var(--card-glass-bg);
   --card-border: var(--card-glass-border);
+  --card-shadow: none;
 }
 
 [data-ui-card] {

@@ -426,6 +426,7 @@ test('v2 tokens are dark-first and include role typography', async () => {
   );
   assert.equal(tokens.semanticColors.background.page, '{darkColors.page}');
   assert.equal(tokens.semanticColors.text.inverse, '{colors.common.white}');
+  assert.equal(tokens.semanticColors.status.info.foreground, '#D7BCE8');
   assert.equal(
     tokens.semanticColors.background.success,
     'rgba(50, 122, 91, 0.18)',
@@ -505,9 +506,16 @@ test('cards use one continuous large-radius token and two materials', async () =
   assert.doesNotMatch(theme, /data-card-material=/);
   assert.match(
     theme,
+    /:root\[data-ui-card-material="liquid-glass"\]\s*\{[^}]*--card-shadow:\s*none;/,
+  );
+  assert.match(
+    theme,
     /backdrop-filter:\s*blur\(var\(--card-glass-blur\)\)\s+saturate\(var\(--card-glass-saturation\)\)/,
   );
-  assert.match(theme, /@media\s*\(prefers-reduced-transparency:\s*reduce\)/);
+  assert.match(
+    theme,
+    /@media\s*\(prefers-reduced-transparency:\s*reduce\)[\s\S]*:root\[data-ui-card-material="liquid-glass"\]\s*\{[^}]*--card-shadow:\s*var\(--card-solid-shadow\);/,
+  );
 });
 
 test('theme CSS exposes the approved v2 public token interface', async () => {
@@ -517,16 +525,16 @@ test('theme CSS exposes the approved v2 public token interface', async () => {
     '--text-marketing-h1-max': '42px',
     '--text-marketing-h1-mobile-min': '30px',
     '--text-marketing-h1-mobile-max': '36px',
-    '--text-page-title-min': '28px',
-    '--text-page-title-max': '32px',
+    '--text-page-title-desktop-min': '28px',
+    '--text-page-title-desktop-max': '32px',
     '--text-page-title-mobile-min': '24px',
     '--text-page-title-mobile-max': '28px',
-    '--text-section-title-min': '22px',
-    '--text-section-title-max': '24px',
+    '--text-section-title-desktop-min': '22px',
+    '--text-section-title-desktop-max': '24px',
     '--text-section-title-mobile-min': '20px',
     '--text-section-title-mobile-max': '22px',
-    '--text-card-title-min': '16px',
-    '--text-card-title-max': '20px',
+    '--text-card-title-desktop-min': '16px',
+    '--text-card-title-desktop-max': '20px',
     '--text-card-title-mobile-min': '16px',
     '--text-card-title-mobile-max': '18px',
     '--text-saas-page-title-min': '20px',
@@ -553,6 +561,9 @@ test('theme CSS exposes the approved v2 public token interface', async () => {
   }
 
   assert.doesNotMatch(theme, /--type-/);
+  assert.doesNotMatch(theme, /--text-page-title-(?:min|max):/);
+  assert.doesNotMatch(theme, /--text-section-title-(?:min|max):/);
+  assert.doesNotMatch(theme, /--text-card-title-(?:min|max):/);
   assert.doesNotMatch(theme, /--color-dark-elevated/);
   assert.match(theme, /--color-dark-surface-elevated:\s*#1b1b20/i);
   assert.match(
@@ -570,6 +581,7 @@ test('theme CSS exposes the approved v2 public token interface', async () => {
   );
   assert.match(theme, /--color-border-success:\s*#327a5b/i);
   assert.match(theme, /--color-border-danger:\s*#b94a5a/i);
+  assert.match(theme, /--color-info-text:\s*#d7bce8;/i);
 });
 
 test('SKILL treats v2 visual boundaries as mandatory', async () => {
@@ -630,6 +642,14 @@ test('visual references document dark typography and card boundaries', async () 
   assert.match(card, /focus-visible/);
   assert.doesNotMatch(card, /12px/);
   assert.doesNotMatch(card, /radius-lg/);
+  assert.match(
+    visual,
+    /\| `color-text-inverse` \| white \| 浅色或品牌实心背景上的反色文本 \|/,
+  );
+  assert.doesNotMatch(
+    visual,
+    /\| `color-text-inverse` \| dark page \|/,
+  );
 });
 
 test('OneSeven review language enforces shared boundaries', async () => {

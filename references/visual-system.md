@@ -131,7 +131,7 @@ color-danger-700
 | `color-text-primary` | dark text primary | 标题、重点文本 |
 | `color-text-secondary` | dark text secondary | 正文、说明文本 |
 | `color-text-tertiary` | dark text tertiary | 辅助文本、占位符 |
-| `color-text-inverse` | dark page | 浅色实心元素上的文本 |
+| `color-text-inverse` | white | 浅色或品牌实心背景上的反色文本 |
 | `color-bg-page` | dark page | 页面背景 |
 | `color-bg-surface` | dark surface | 实体卡片、面板背景 |
 | `color-bg-elevated` | dark elevated | 浮层和抬升区域 |
