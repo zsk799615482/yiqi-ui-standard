@@ -89,40 +89,29 @@ C. 已有页面审查或改进
 - 分平台实现指南：`references/platform-implementations.md`
 - OneSeven 品牌指导：`references/oneseven-guidance.md`
 
+## 代码实现模式
+
+1. 读取已批准的 UI 需求规范；没有时先建立最小设计基线
+2. 读取产品画像、Hero 和对应产品规范
+3. 询问实体暗色或液态玻璃卡片
+4. 确认技术栈和平台
+5. 生成代码
+6. 在 Web 根元素添加 `data-ui-page-type`、`data-ui-hero` 和 `data-ui-card-material`
+7. 运行 `scripts/validate-generated-web.mjs`
+8. 读取 `references/generation-quality-gate.md`，处理静态 error，并完成桌面、移动浏览器验收
+9. 静态 warning 必须在浏览器中复核并记录；未完成静态和视觉验收时，不得宣称完成
+
 ## 审查模式输出格式
 
-使用 markdown 表格，清晰分级：
-
-```markdown
-## 审查结果
-
-### 🔴 强制问题（必须修复）
-
-| 当前代码 | 应该改成 | 原因 |
-|---------|---------|------|
-| `color: #3b83f7` | `color: var(--color-primary)` | 主色值不精确，应使用标准 token #3B82F6 |
-
-### 🟡 推荐改进
-
-| 当前代码 | 建议改成 | 原因 |
-|---------|---------|------|
-| `padding: 17px` | `padding: 16px` | 使用标准间距（4px 倍数） |
-
-### 🟢 优化建议
-
-| 观察 | 建议 |
-|------|------|
-| 未响应 prefers-reduced-motion | 添加媒体查询支持减少动画偏好 |
-```
-
-OneSeven 项目改用 `oneseven-guidance.md` 中的四段式报告：
+读取 `references/review-checklist.md`。OneSeven 审查使用五段式报告：
 
 1. 品牌基础问题
 2. 产品内部一致性
 3. 体验与可用性建议
-4. Apple Design 参考建议
+4. Apple Design 参考
+5. 做得好的地方
 
-除 Logo、字体、品牌紫定位、默认暗色、排版角色范围、Hero 与卡片规则等共享硬边界外，不要把不同产品的布局、局部密度或控件尺寸差异列为强制问题。
+每个问题包含位置、当前状态、修复方向和规则依据。首次审查最多输出 Top 5 阻塞问题和 Top 3 推荐改进。
 
 ## 提取模式要点
 

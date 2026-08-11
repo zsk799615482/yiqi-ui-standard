@@ -915,3 +915,51 @@ test('OneSeven review language enforces shared boundaries', async () => {
   );
   assert.doesNotMatch(guidance, /所有独立卡片使用 36px/);
 });
+
+test('generation workflow requires static and browser validation', async () => {
+  const skill = await read('SKILL.md');
+  const gate = await read('references/generation-quality-gate.md');
+
+  assert.match(skill, /## 代码实现模式/);
+  assert.match(skill, /references\/generation-quality-gate\.md/);
+  assert.match(skill, /scripts\/validate-generated-web\.mjs/);
+  assert.match(gate, /品牌模式已确认/);
+  assert.match(gate, /卡片材质已确认/);
+  assert.match(gate, /真实素材状态已确认/);
+  assert.match(gate, /1440 × 1000/);
+  assert.match(gate, /390 × 844/);
+  assert.match(gate, /静态 DOM 测试通过不能代替截图/);
+  assert.match(gate, /字体资产是否真实加载/);
+  assert.match(gate, /主要任务、数据和状态[\s\S]*第一视口/);
+  assert.match(gate, /不得宣称[\s\S]*通过/);
+});
+
+test('quality gate keeps static validation deterministic and lightweight', async () => {
+  const gate = await read('references/generation-quality-gate.md');
+
+  assert.match(gate, /只有确定性错误由静态校验阻塞/);
+  assert.match(gate, /error[\s\S]*阻塞/);
+  assert.match(gate, /warning[\s\S]*浏览器[\s\S]*记录/);
+  assert.match(gate, /外部样式表/);
+  assert.match(gate, /复杂 CSS 级联/);
+  assert.match(gate, /非 px 单位或长度计算/);
+  assert.match(gate, /字体加载/);
+  assert.match(gate, /不确定的视觉判断/);
+  assert.match(gate, /不扩展静态校验器/);
+});
+
+test('review and platform guidance use the v2 quality contract', async () => {
+  const review = await read('references/review-checklist.md');
+  const platform = await read('references/platform-implementations.md');
+
+  assert.match(review, /## 审查入口/);
+  assert.match(review, /## 阻塞问题/);
+  assert.match(review, /未执行静态校验/);
+  assert.match(review, /桌面和移动截图/);
+  assert.match(review, /静态 warning[\s\S]*浏览器[\s\S]*记录/);
+  assert.match(review, /Top 5 阻塞问题/);
+  assert.match(platform, /## 共同约束/);
+  assert.match(platform, /默认只实现暗色主题/);
+  assert.match(platform, /scripts\/validate-generated-web\.mjs/);
+  assert.match(platform, /Playwright 桌面\/移动验收/);
+});
