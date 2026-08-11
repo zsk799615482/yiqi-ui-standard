@@ -644,11 +644,15 @@ test('visual references document dark typography and card boundaries', async () 
   assert.doesNotMatch(card, /radius-lg/);
   assert.match(
     visual,
-    /\| `color-text-inverse` \| white \| 浅色或品牌实心背景上的反色文本 \|/,
+    /\| `color-text-inverse` \| white \| 深色或品牌实心背景上的反色文本 \|/,
   );
   assert.doesNotMatch(
     visual,
     /\| `color-text-inverse` \| dark page \|/,
+  );
+  assert.doesNotMatch(
+    visual,
+    /浅色或品牌实心背景上的反色文本/,
   );
 });
 
