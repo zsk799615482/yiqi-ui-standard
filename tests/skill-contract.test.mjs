@@ -589,17 +589,36 @@ test('cards use one continuous large-radius token and two materials', async () =
       border: 'rgba(255, 255, 255, 0.16)',
       backdropBlur: '24px',
       backdropSaturation: '140%',
-      reducedTransparencyFallback: '{darkColors.surface}',
-      reducedTransparencyMaterial: 'solid',
-      unsupportedBackdropMaterial: 'solid',
-      unsupportedBackdropFallback: {
-        background: '{darkColors.surface}',
-        border: '{darkColors.border}',
-        shadow: '0 18px 60px rgba(0, 0, 0, 0.22)',
+      reducedTransparencyFallback: '{cardMaterials.solid}',
+      unsupportedBackdropFallback: '{cardMaterials.solid}',
+      fallbackOverrides: {
         backdropFilter: 'none',
       },
     },
   });
+  const serializedLiquidGlass = JSON.stringify(
+    tokens.cardMaterials.liquidGlass,
+  );
+  assert.equal(
+    Object.hasOwn(
+      tokens.cardMaterials.liquidGlass,
+      'reducedTransparencyMaterial',
+    ),
+    false,
+  );
+  assert.equal(
+    Object.hasOwn(
+      tokens.cardMaterials.liquidGlass,
+      'unsupportedBackdropMaterial',
+    ),
+    false,
+  );
+  assert.doesNotMatch(serializedLiquidGlass, /\{darkColors\.surface\}/);
+  assert.doesNotMatch(serializedLiquidGlass, /\{darkColors\.border\}/);
+  assert.doesNotMatch(
+    serializedLiquidGlass,
+    /0 18px 60px rgba\(0, 0, 0, 0\.22\)/,
+  );
 
   assert.match(theme, /color-scheme:\s*dark/);
   assert.match(theme, /--radius-card:\s*36px/);
