@@ -109,6 +109,21 @@ const assertMarkdownListItems = (section, items, label) => {
   }
 };
 
+test('skill identity is Yiqi UI Standard', async () => {
+  const skill = await read('SKILL.md');
+  const readme = await read('README.md');
+  const agentMetadata = await read('agents/openai.yaml');
+
+  assert.match(skill, /^name: yiqi-ui-standard$/m);
+  assert.match(skill, /^# Yiqi UI Standard$/m);
+  assert.match(skill, /快速统一 UI 规范/);
+  assert.match(readme, /^# Yiqi UI Standard$/m);
+  assert.match(readme, /快速帮助开发人员统一 UI 规范/);
+  assert.match(agentMetadata, /display_name: "Yiqi UI Standard"/);
+  assert.match(agentMetadata, /快速帮助开发人员建立、应用和检查统一的 UI 规范/);
+  assert.match(agentMetadata, /\$yiqi-ui-standard/);
+});
+
 test('SKILL entry asks brand mode before project stage', async () => {
   const skill = await read('SKILL.md');
 
@@ -967,7 +982,7 @@ test('review and platform guidance use the v2 quality contract', async () => {
 test('release metadata and pressure cases cover v2 behavior', async () => {
   const version = (await read('VERSION')).trim();
   const tokens = JSON.parse(await read('design-tokens.json'));
-  const cases = JSON.parse(await read('tests/evals/ui-standard-v2-cases.json'));
+  const cases = JSON.parse(await read('tests/evals/yiqi-ui-standard-v2-cases.json'));
   const readme = await read('README.md');
 
   assert.equal(version, '2.0.0');

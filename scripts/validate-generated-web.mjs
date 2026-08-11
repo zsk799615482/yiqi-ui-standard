@@ -783,7 +783,7 @@ const main = async () => {
   if (options.json) {
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   } else if (report.issues.length === 0) {
-    process.stdout.write('UI Standard 静态校验通过\n');
+    process.stdout.write('Yiqi UI Standard 静态校验通过\n');
   } else {
     for (const issue of report.issues) {
       const label = issue.severity === 'warning' ? '警告' : '错误';
@@ -800,7 +800,7 @@ const isDirectRun =
 
 if (isDirectRun) {
   main().catch((error) => {
-    process.stderr.write(`UI Standard 校验器错误：${error.message}\n`);
+    process.stderr.write(`Yiqi UI Standard 校验器错误：${error.message}\n`);
     process.exitCode = 1;
   });
 }

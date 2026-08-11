@@ -14,7 +14,7 @@ const validatorPath = fileURLToPath(
 
 const issueCodes = (report) => report.issues.map(({ code }) => code);
 
-test('无效营销页报告全部 UI Standard 违规项', async () => {
+test('无效营销页报告全部 Yiqi UI Standard 违规项', async () => {
   const report = analyzeHtml(await readFixture('marketing-invalid.html'));
 
   assert.equal(report.ok, false);
@@ -435,22 +435,22 @@ test('CLI 对有效页面返回 exit 0 和中文成功文案', () => {
   );
 
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout.trim(), 'UI Standard 静态校验通过');
+  assert.equal(result.stdout.trim(), 'Yiqi UI Standard 静态校验通过');
 });
 
 test('CLI 参数错误使用中文错误信息和前缀', () => {
   const cases = [
     {
       args: [],
-      message: /UI Standard 校验器错误：缺少必需的 --file 参数。/,
+      message: /Yiqi UI Standard 校验器错误：缺少必需的 --file 参数。/,
     },
     {
       args: ['--file'],
-      message: /UI Standard 校验器错误：参数 --file 缺少值。/,
+      message: /Yiqi UI Standard 校验器错误：参数 --file 缺少值。/,
     },
     {
       args: ['--unknown'],
-      message: /UI Standard 校验器错误：未知参数：--unknown/,
+      message: /Yiqi UI Standard 校验器错误：未知参数：--unknown/,
     },
   ];
 
@@ -475,6 +475,6 @@ test('CLI 文件读取失败输出中文信息且不泄露 ENOENT', () => {
   );
 
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /UI Standard 校验器错误：无法读取文件/);
+  assert.match(result.stderr, /Yiqi UI Standard 校验器错误：无法读取文件/);
   assert.doesNotMatch(result.stderr, /ENOENT|no such file or directory/i);
 });

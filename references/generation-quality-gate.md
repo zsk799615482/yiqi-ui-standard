@@ -49,7 +49,7 @@ Approved Hero 的真实媒体或产品状态额外标记：
 ## 静态校验
 
 ```bash
-node path/to/ui-standard/scripts/validate-generated-web.mjs \
+node path/to/yiqi-ui-standard/scripts/validate-generated-web.mjs \
   --file path/to/page.html \
   --page-type marketing
 ```
