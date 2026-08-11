@@ -42,9 +42,52 @@ test('product profiles support composite products and page overrides', async () 
   const archetypes = await read('references/product-archetypes.md');
 
   assert.match(skill, /references\/product-archetypes\.md/);
+  assert.match(skill, /### 第 2 步：产品画像/);
+  assert.match(skill, /一个产品主类型/);
+  assert.match(skill, /零到三个次类型/);
+  assert.match(skill, /当前页面或路由的页面级类型/);
+  assert.match(skill, /复合产品不得强行归为单一类型/);
+  assert.match(skill, /布局和密度按页面主要任务校准/);
+
   assert.match(archetypes, /1 个主类型/);
   assert.match(archetypes, /0–3 个次类型/);
   assert.match(archetypes, /页面级画像/);
+  assert.match(
+    archetypes,
+    /主类型决定整体导航、默认信息密度、核心工作节奏和主要壳层/,
+  );
+  assert.match(archetypes, /次类型只补充其对应功能/);
+  assert.match(
+    archetypes,
+    /品牌、暗色主题、字体范围、连续圆角和卡片材质保持产品级关联/,
+  );
+
+  assert.match(archetypes, /主要任务：浏览、创建、管理、分析、交易、协作/);
+  assert.match(archetypes, /信息密度：低、中、高/);
+  assert.match(archetypes, /使用节奏：一次性、周期性、持续工作/);
+  assert.match(archetypes, /操作风险：普通、敏感、不可逆/);
+  assert.match(archetypes, /Hero \/ No Hero/);
+  assert.match(archetypes, /approved layout/);
+
+  assert.match(
+    archetypes,
+    /品牌信号继续保留，但不能破坏高密度工作流、数据辨识和关键操作/,
+  );
+
+  assert.match(archetypes, /一个 AI 商业平台可以采用以下画像/);
+  assert.match(archetypes, /主类型：AI 创作 \/ 对话工作台/);
+  assert.match(
+    archetypes,
+    /次类型：运营管理 SaaS、数据分析 \/ 监控看板、电商 \/ 交易 \/ 支付/,
+  );
+  assert.match(archetypes, /官网：品牌官网 \/ 营销转化，有 Hero/);
+  assert.match(archetypes, /创作区：AI 创作 \/ 对话工作台，无 Hero/);
+  assert.match(archetypes, /项目管理：运营管理 SaaS/);
+  assert.match(archetypes, /数据中心：数据分析 \/ 监控看板/);
+  assert.match(
+    archetypes,
+    /订阅结算：电商 \/ 交易 \/ 支付，并按敏感或不可逆操作处理交易与风险/,
+  );
 
   const productArchetypes = [
     '品牌官网 / 营销转化',
@@ -62,7 +105,11 @@ test('product profiles support composite products and page overrides', async () 
   ];
 
   for (const archetype of productArchetypes) {
-    assert.match(archetypes, new RegExp(archetype));
+    assert.match(
+      archetypes,
+      new RegExp(archetype),
+      `missing product archetype: ${archetype}`,
+    );
   }
 
   const conflictPriority = [
@@ -77,7 +124,10 @@ test('product profiles support composite products and page overrides', async () 
   let previousPriorityIndex = -1;
   for (const priority of conflictPriority) {
     const priorityIndex = archetypes.indexOf(priority);
-    assert.ok(priorityIndex > previousPriorityIndex);
+    assert.ok(
+      priorityIndex > previousPriorityIndex,
+      `conflict priority is missing or out of order: ${priority}`,
+    );
     previousPriorityIndex = priorityIndex;
   }
 });
