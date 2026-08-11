@@ -47,7 +47,7 @@
   /* Dark-first neutral foundation */
   --color-dark-page: #09090b;
   --color-dark-surface: #141418;
-  --color-dark-elevated: #1b1b20;
+  --color-dark-surface-elevated: #1b1b20;
   --color-dark-subtle: #222228;
   --color-dark-border: #2e2e35;
   --color-dark-border-strong: #44444d;
@@ -70,22 +70,22 @@
   --color-text-primary: var(--color-dark-text-primary);
   --color-text-secondary: var(--color-dark-text-secondary);
   --color-text-tertiary: var(--color-dark-text-tertiary);
-  --color-text-inverse: var(--color-dark-page);
+  --color-text-inverse: #ffffff;
   --color-text-brand: var(--color-primary-500);
   --color-text-success: #72b596;
   --color-text-danger: #df7b89;
   --color-bg-page: var(--color-dark-page);
   --color-bg-surface: var(--color-dark-surface);
-  --color-bg-elevated: var(--color-dark-elevated);
+  --color-bg-elevated: var(--color-dark-surface-elevated);
   --color-bg-subtle: var(--color-dark-subtle);
   --color-bg-selected: rgba(154, 106, 186, 0.16);
-  --color-bg-success: rgba(114, 181, 150, 0.16);
-  --color-bg-danger: rgba(223, 123, 137, 0.16);
+  --color-bg-success: rgba(50, 122, 91, 0.18);
+  --color-bg-danger: rgba(185, 74, 90, 0.18);
   --color-border-default: var(--color-dark-border);
   --color-border-strong: var(--color-dark-border-strong);
   --color-border-focus: var(--color-primary-500);
-  --color-border-success: #72b596;
-  --color-border-danger: #df7b89;
+  --color-border-success: #327a5b;
+  --color-border-danger: #b94a5a;
   --color-focus-ring: rgba(154, 106, 186, 0.28);
 
   /* Status aliases. Warning intentionally adds no new chromatic color. */
@@ -117,28 +117,28 @@
   --text-3xl: 30px;
   --text-4xl: 36px;
   --text-5xl: 48px;
-  --type-marketing-h1-desktop-min: 36px;
-  --type-marketing-h1-desktop-max: 42px;
-  --type-marketing-h1-mobile-min: 30px;
-  --type-marketing-h1-mobile-max: 36px;
-  --type-page-title-desktop-min: 28px;
-  --type-page-title-desktop-max: 32px;
-  --type-page-title-mobile-min: 24px;
-  --type-page-title-mobile-max: 28px;
-  --type-section-title-desktop-min: 22px;
-  --type-section-title-desktop-max: 24px;
-  --type-section-title-mobile-min: 20px;
-  --type-section-title-mobile-max: 22px;
-  --type-card-title-desktop-min: 16px;
-  --type-card-title-desktop-max: 20px;
-  --type-card-title-mobile-min: 16px;
-  --type-card-title-mobile-max: 18px;
-  --type-saas-page-title-min: 20px;
-  --type-saas-page-title-max: 24px;
-  --type-saas-panel-title-min: 16px;
-  --type-saas-panel-title-max: 18px;
-  --type-saas-body-min: 13px;
-  --type-saas-body-max: 16px;
+  --text-marketing-h1-min: 36px;
+  --text-marketing-h1-max: 42px;
+  --text-marketing-h1-mobile-min: 30px;
+  --text-marketing-h1-mobile-max: 36px;
+  --text-page-title-min: 28px;
+  --text-page-title-max: 32px;
+  --text-page-title-mobile-min: 24px;
+  --text-page-title-mobile-max: 28px;
+  --text-section-title-min: 22px;
+  --text-section-title-max: 24px;
+  --text-section-title-mobile-min: 20px;
+  --text-section-title-mobile-max: 22px;
+  --text-card-title-min: 16px;
+  --text-card-title-max: 20px;
+  --text-card-title-mobile-min: 16px;
+  --text-card-title-mobile-max: 18px;
+  --text-saas-page-title-min: 20px;
+  --text-saas-page-title-max: 24px;
+  --text-saas-panel-title-min: 16px;
+  --text-saas-panel-title-max: 18px;
+  --text-saas-body-min: 13px;
+  --text-saas-body-max: 16px;
 
   /* Spacing */
   --spacing-0: 0;
@@ -184,15 +184,14 @@
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12);
-  --card-solid-background: var(--color-bg-surface);
-  --card-solid-border: 1px solid var(--color-border-default);
-  --card-solid-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
-  --card-glass-background: rgba(27, 27, 32, 0.62);
-  --card-glass-border: 1px solid rgba(245, 245, 247, 0.14);
+  --card-solid-bg: var(--color-bg-surface);
+  --card-solid-border: var(--color-border-default);
+  --card-solid-shadow: 0 18px 60px rgba(0, 0, 0, 0.22);
+  --card-glass-bg: rgba(255, 255, 255, 0.08);
+  --card-glass-border: rgba(255, 255, 255, 0.16);
   --card-glass-blur: 24px;
   --card-glass-saturation: 140%;
-  --card-glass-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
-  --card-background: var(--card-solid-background);
+  --card-background: var(--card-solid-bg);
   --card-border: var(--card-solid-border);
   --card-shadow: var(--card-solid-shadow);
 
@@ -221,39 +220,40 @@
   --z-toast: 1500;
 }
 
-:root[data-card-material="solid"] {
-  --card-background: var(--card-solid-background);
+:root[data-ui-card-material="solid"] {
+  --card-background: var(--card-solid-bg);
   --card-border: var(--card-solid-border);
   --card-shadow: var(--card-solid-shadow);
 }
 
-:root[data-card-material="liquid-glass"] {
-  --card-background: var(--card-glass-background);
+:root[data-ui-card-material="liquid-glass"] {
+  --card-background: var(--card-glass-bg);
   --card-border: var(--card-glass-border);
-  --card-shadow: var(--card-glass-shadow);
 }
 
 [data-ui-card] {
   background: var(--card-background);
-  border: var(--card-border);
+  border: 1px solid var(--card-border);
   border-radius: var(--radius-card);
   corner-shape: squircle;
   box-shadow: var(--card-shadow);
 }
 
-:root[data-card-material="liquid-glass"] [data-ui-card] {
-  -webkit-backdrop-filter: blur(24px) saturate(140%);
-  backdrop-filter: blur(24px) saturate(140%);
+:root[data-ui-card-material="liquid-glass"] [data-ui-card] {
+  -webkit-backdrop-filter: blur(var(--card-glass-blur))
+    saturate(var(--card-glass-saturation));
+  backdrop-filter: blur(var(--card-glass-blur))
+    saturate(var(--card-glass-saturation));
 }
 
 @media (prefers-reduced-transparency: reduce) {
-  :root[data-card-material="liquid-glass"] {
-    --card-background: var(--card-solid-background);
+  :root[data-ui-card-material="liquid-glass"] {
+    --card-background: var(--card-solid-bg);
     --card-border: var(--card-solid-border);
     --card-shadow: var(--card-solid-shadow);
   }
 
-  :root[data-card-material="liquid-glass"] [data-ui-card] {
+  :root[data-ui-card-material="liquid-glass"] [data-ui-card] {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }

@@ -12,7 +12,7 @@
   "darkColors": {
     "page": "#09090B",
     "surface": "#141418",
-    "elevated": "#1B1B20",
+    "surfaceElevated": "#1B1B20",
     "subtle": "#222228",
     "border": "#2E2E35",
     "borderStrong": "#44444D",
@@ -54,7 +54,7 @@
       "primary": "{darkColors.textPrimary}",
       "secondary": "{darkColors.textSecondary}",
       "tertiary": "{darkColors.textTertiary}",
-      "inverse": "{darkColors.page}",
+      "inverse": "{colors.common.white}",
       "brand": "{colors.primary.500}",
       "success": "#72B596",
       "danger": "#DF7B89"
@@ -62,19 +62,19 @@
     "background": {
       "page": "{darkColors.page}",
       "surface": "{darkColors.surface}",
-      "elevated": "{darkColors.elevated}",
+      "elevated": "{darkColors.surfaceElevated}",
       "subtle": "{darkColors.subtle}",
       "selected": "rgba(154, 106, 186, 0.16)",
-      "success": "rgba(114, 181, 150, 0.16)",
-      "danger": "rgba(223, 123, 137, 0.16)"
+      "success": "rgba(50, 122, 91, 0.18)",
+      "danger": "rgba(185, 74, 90, 0.18)"
     },
     "border": {
       "default": "{darkColors.border}",
       "strong": "{darkColors.borderStrong}",
       "focus": "{colors.primary.500}",
       "focusRing": "rgba(154, 106, 186, 0.28)",
-      "success": "#72B596",
-      "danger": "#DF7B89"
+      "success": "{colors.success.500}",
+      "danger": "{colors.danger.500}"
     },
     "status": {
       "info": {
@@ -87,11 +87,11 @@
         "icon": "{colors.primary.500}"
       },
       "success": {
-        "background": "rgba(114, 181, 150, 0.16)",
+        "background": "rgba(50, 122, 91, 0.18)",
         "foreground": "#72B596"
       },
       "danger": {
-        "background": "rgba(223, 123, 137, 0.16)",
+        "background": "rgba(185, 74, 90, 0.18)",
         "foreground": "#DF7B89"
       }
     }
@@ -282,20 +282,15 @@
     "defaultQuestionRequired": true,
     "solid": {
       "background": "{darkColors.surface}",
-      "border": "1px solid {darkColors.border}",
-      "shadow": "0 18px 48px rgba(0, 0, 0, 0.28)"
+      "border": "{darkColors.border}",
+      "shadow": "0 18px 60px rgba(0, 0, 0, 0.22)"
     },
     "liquidGlass": {
-      "background": "rgba(27, 27, 32, 0.62)",
-      "border": "1px solid rgba(245, 245, 247, 0.14)",
+      "background": "rgba(255, 255, 255, 0.08)",
+      "border": "rgba(255, 255, 255, 0.16)",
       "backdropBlur": "24px",
       "backdropSaturation": "140%",
-      "shadow": "0 18px 48px rgba(0, 0, 0, 0.32)",
-      "reducedTransparencyFallback": {
-        "background": "{darkColors.surface}",
-        "border": "1px solid {darkColors.border}",
-        "backdropFilter": "none"
-      }
+      "reducedTransparencyFallback": "{darkColors.surface}"
     }
   },
   "shadow": {

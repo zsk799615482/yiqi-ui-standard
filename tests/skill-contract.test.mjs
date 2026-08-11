@@ -412,11 +412,36 @@ test('SaaS reference includes all approved workbench shells', async () => {
 
 test('v2 tokens are dark-first and include role typography', async () => {
   const tokens = JSON.parse(await read('design-tokens.json'));
+  const serializedTokens = JSON.stringify(tokens);
 
   assert.equal(tokens.meta.version, '2.0.0');
   assert.equal(tokens.theme.default, 'dark');
   assert.equal(tokens.theme.lightGeneratedOnlyWhenRequested, true);
+  assert.equal(tokens.darkColors.surfaceElevated, '#1B1B20');
+  assert.equal(tokens.darkColors.elevated, undefined);
+  assert.doesNotMatch(serializedTokens, /\{darkColors\.elevated\}/);
+  assert.equal(
+    tokens.semanticColors.background.elevated,
+    '{darkColors.surfaceElevated}',
+  );
   assert.equal(tokens.semanticColors.background.page, '{darkColors.page}');
+  assert.equal(tokens.semanticColors.text.inverse, '{colors.common.white}');
+  assert.equal(
+    tokens.semanticColors.background.success,
+    'rgba(50, 122, 91, 0.18)',
+  );
+  assert.equal(
+    tokens.semanticColors.background.danger,
+    'rgba(185, 74, 90, 0.18)',
+  );
+  assert.equal(
+    tokens.semanticColors.border.success,
+    '{colors.success.500}',
+  );
+  assert.equal(
+    tokens.semanticColors.border.danger,
+    '{colors.danger.500}',
+  );
 
   assert.deepEqual(tokens.typography.roles.marketingH1, {
     desktop: { min: '36px', max: '42px' },
@@ -453,10 +478,21 @@ test('cards use one continuous large-radius token and two materials', async () =
   const theme = await read('theme.css');
 
   assert.equal(tokens.borderRadius.card, '36px');
-  assert.equal(tokens.cardMaterials.defaultQuestionRequired, true);
-  assert.ok(tokens.cardMaterials.solid);
-  assert.ok(tokens.cardMaterials.liquidGlass);
-  assert.ok(tokens.cardMaterials.liquidGlass.reducedTransparencyFallback);
+  assert.deepEqual(tokens.cardMaterials, {
+    defaultQuestionRequired: true,
+    solid: {
+      background: '{darkColors.surface}',
+      border: '{darkColors.border}',
+      shadow: '0 18px 60px rgba(0, 0, 0, 0.22)',
+    },
+    liquidGlass: {
+      background: 'rgba(255, 255, 255, 0.08)',
+      border: 'rgba(255, 255, 255, 0.16)',
+      backdropBlur: '24px',
+      backdropSaturation: '140%',
+      reducedTransparencyFallback: '{darkColors.surface}',
+    },
+  });
 
   assert.match(theme, /color-scheme:\s*dark/);
   assert.match(theme, /--radius-card:\s*36px/);
@@ -464,10 +500,76 @@ test('cards use one continuous large-radius token and two materials', async () =
     theme,
     /\[data-ui-card\]\s*\{[\s\S]*border-radius:\s*var\(--radius-card\)[\s\S]*corner-shape:\s*squircle/,
   );
-  assert.match(theme, /:root\[data-card-material="solid"\]/);
-  assert.match(theme, /:root\[data-card-material="liquid-glass"\]/);
-  assert.match(theme, /backdrop-filter:\s*blur\([^)]*\)\s+saturate\([^)]*\)/);
+  assert.match(theme, /:root\[data-ui-card-material="solid"\]/);
+  assert.match(theme, /:root\[data-ui-card-material="liquid-glass"\]/);
+  assert.doesNotMatch(theme, /data-card-material=/);
+  assert.match(
+    theme,
+    /backdrop-filter:\s*blur\(var\(--card-glass-blur\)\)\s+saturate\(var\(--card-glass-saturation\)\)/,
+  );
   assert.match(theme, /@media\s*\(prefers-reduced-transparency:\s*reduce\)/);
+});
+
+test('theme CSS exposes the approved v2 public token interface', async () => {
+  const theme = await read('theme.css');
+  const expectedVariables = {
+    '--text-marketing-h1-min': '36px',
+    '--text-marketing-h1-max': '42px',
+    '--text-marketing-h1-mobile-min': '30px',
+    '--text-marketing-h1-mobile-max': '36px',
+    '--text-page-title-min': '28px',
+    '--text-page-title-max': '32px',
+    '--text-page-title-mobile-min': '24px',
+    '--text-page-title-mobile-max': '28px',
+    '--text-section-title-min': '22px',
+    '--text-section-title-max': '24px',
+    '--text-section-title-mobile-min': '20px',
+    '--text-section-title-mobile-max': '22px',
+    '--text-card-title-min': '16px',
+    '--text-card-title-max': '20px',
+    '--text-card-title-mobile-min': '16px',
+    '--text-card-title-mobile-max': '18px',
+    '--text-saas-page-title-min': '20px',
+    '--text-saas-page-title-max': '24px',
+    '--text-saas-panel-title-min': '16px',
+    '--text-saas-panel-title-max': '18px',
+    '--text-saas-body-min': '13px',
+    '--text-saas-body-max': '16px',
+    '--card-solid-bg': 'var(--color-bg-surface)',
+    '--card-solid-border': 'var(--color-border-default)',
+    '--card-solid-shadow': '0 18px 60px rgba(0, 0, 0, 0.22)',
+    '--card-glass-bg': 'rgba(255, 255, 255, 0.08)',
+    '--card-glass-border': 'rgba(255, 255, 255, 0.16)',
+    '--card-glass-blur': '24px',
+    '--card-glass-saturation': '140%',
+  };
+
+  for (const [name, value] of Object.entries(expectedVariables)) {
+    assert.match(
+      theme,
+      new RegExp(`${escapeRegExp(name)}:\\s*${escapeRegExp(value)};`),
+      `missing or incorrect public CSS variable: ${name}`,
+    );
+  }
+
+  assert.doesNotMatch(theme, /--type-/);
+  assert.doesNotMatch(theme, /--color-dark-elevated/);
+  assert.match(theme, /--color-dark-surface-elevated:\s*#1b1b20/i);
+  assert.match(
+    theme,
+    /--color-bg-elevated:\s*var\(--color-dark-surface-elevated\)/,
+  );
+  assert.match(theme, /--color-text-inverse:\s*#fff(?:fff)?;/i);
+  assert.match(
+    theme,
+    /--color-bg-success:\s*rgba\(50,\s*122,\s*91,\s*0\.18\)/,
+  );
+  assert.match(
+    theme,
+    /--color-bg-danger:\s*rgba\(185,\s*74,\s*90,\s*0\.18\)/,
+  );
+  assert.match(theme, /--color-border-success:\s*#327a5b/i);
+  assert.match(theme, /--color-border-danger:\s*#b94a5a/i);
 });
 
 test('SKILL treats v2 visual boundaries as mandatory', async () => {
@@ -528,4 +630,21 @@ test('visual references document dark typography and card boundaries', async () 
   assert.match(card, /focus-visible/);
   assert.doesNotMatch(card, /12px/);
   assert.doesNotMatch(card, /radius-lg/);
+});
+
+test('OneSeven review language enforces shared boundaries', async () => {
+  const guidance = await read('references/oneseven-guidance.md');
+
+  assert.match(
+    guidance,
+    /默认暗色、排版角色、Hero、卡片等共享硬边界冲突必须作为强制问题/,
+  );
+  assert.match(
+    guidance,
+    /只有布局、控件尺寸、局部密度等合理产品差异使用“建议”措辞/,
+  );
+  assert.doesNotMatch(
+    guidance,
+    /除明确品牌冲突外，优先使用“建议”“可以考虑”“需要确认局部规则”等措辞/,
+  );
 });
