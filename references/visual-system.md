@@ -132,6 +132,7 @@ color-danger-700
 | `color-text-secondary` | dark text secondary | 正文、说明文本 |
 | `color-text-tertiary` | dark text tertiary | 辅助文本、占位符 |
 | `color-text-inverse` | white | 深色或品牌实心背景上的反色文本 |
+| `color-text-on-accent` | dark page | 品牌色或危险色实心操作上的高对比文本 |
 | `color-bg-page` | dark page | 页面背景 |
 | `color-bg-surface` | dark surface | 实体卡片、面板背景 |
 | `color-bg-elevated` | dark elevated | 浮层和抬升区域 |
@@ -184,6 +185,8 @@ Profile 是产品级起点，不是跨产品硬性尺寸。移动端触控目标
 
 基础字号 token 可用于正文和控件，但标题生成必须按角色选择，不得用视口宽度无限放大。
 
+基础 `text-5xl` 为 42px，行高为 48px，不得超过排版角色上限，也不能作为绕过 Marketing H1 最大值的另一套标题接口。
+
 | 角色 | 桌面范围 | 移动范围 | 用途 |
 |------|---------|---------|------|
 | Marketing H1 | 36–42px | 30–36px | 品牌官网、产品介绍和发布页面的唯一主标题 |
@@ -232,17 +235,18 @@ SaaS 与持续工作界面采用更紧凑的角色范围：
 | `radius-lg` | 12px | 大控件、菜单和非卡片容器 |
 | `radius-xl` | 16px | Modal、抽屉等容器级元素 |
 | `radius-card` | 36px | 所有独立卡片，配合连续曲率 |
+| `radius-card-mobile` | 28–36px，默认 32px | 移动端独立卡片，继续使用 squircle |
 | `radius-full` | 9999px | 头像、胶囊按钮、开关 |
 
-卡片固定使用 `radius-card: 36px` 与 `corner-shape: squircle`。移动端空间不足时可以适度降低实际半径，但必须保持连续曲率和同一产品的卡片语言；不能建立 4–24px 的第二套卡片圆角。按钮、输入框、筛选器、标签和 Modal 继续使用控件或容器级圆角，不得被称为卡片。
+卡片桌面使用 `radius-card: 36px` 与 `corner-shape: squircle`。移动端使用 28–36px、默认 32px，并继续保持 squircle；不得低于 28px，不得另建小圆角系统。按钮、输入框、筛选器、标签和 Modal 继续使用控件或容器级圆角，不得被称为卡片。
 
 ### 阴影 Tokens
 
 | Token | 定义 | 典型用途 |
 |-------|------|---------|
 | `shadow-none` | none | 扁平元素 |
-| `shadow-sm` | `0 1px 2px rgba(0,0,0,0.05)` | 轻微凸起、卡片默认态 |
-| `shadow-md` | `0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.06)` | 卡片悬停、下拉菜单 |
+| `shadow-sm` | `0 1px 2px rgba(0,0,0,0.05)` | 轻微控件表面、按钮或输入反馈 |
+| `shadow-md` | `0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.06)` | 菜单、Popover 等非卡片表面 |
 | `shadow-lg` | `0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.05)` | 浮层、Popover |
 | `shadow-xl` | `0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.04)` | 模态框、抽屉 |
 | `shadow-inner` | `inset 0 2px 4px rgba(0,0,0,0.05)` | 输入框内凹、按下态 |
@@ -251,6 +255,7 @@ SaaS 与持续工作界面采用更紧凑的角色范围：
 - 阴影颜色统一使用透明黑（`rgba(0,0,0,x)`），不使用彩色阴影（除品牌强调场景）
 - 层级越高的元素阴影范围越大、越柔和
 - 阴影必须配合 z-index 层级使用，视觉层级与逻辑层级保持一致
+- 卡片仅使用材质专用 shadow：实体材质使用 solid shadow，液态玻璃无阴影；不支持 backdrop 或减少透明时，fallback 使用实体 shadow
 
 ### 层级 Tokens（z-index）
 
@@ -300,10 +305,10 @@ SaaS 与持续工作界面采用更紧凑的角色范围：
 
 | 变体 | 背景 | 文字 | 边框 | 用途 |
 |------|------|------|------|------|
-| primary | color-primary（primary-500） | color-text-primary | none | 当前任务的主操作 |
+| primary | color-primary（primary-500） | color-text-on-accent | none | 当前任务的主操作 |
 | secondary | color-bg-surface | color-text-secondary | color-border-default | 次要操作 |
 | tertiary | transparent | color-text-secondary | none | 弱化操作、图标按钮 |
-| danger | color-danger | color-text-primary | none | 删除等破坏性操作 |
+| danger | color-danger | color-text-on-accent | none | 删除等破坏性操作 |
 | ghost | transparent | color-primary | none | 链接式按钮 |
 
 **状态定义（必须全部实现）：**
@@ -322,6 +327,7 @@ SaaS 与持续工作界面采用更紧凑的角色范围：
 - 图标 + 文字按钮，图标与文字间距为 `spacing-2`（8px）
 - 同一任务区应有明确主操作，避免多个同权 primary 竞争视觉焦点
 - 按钮文案使用动词，不超过 4 个中文字（如"保存"、"立即购买"）
+- `color-primary` / `color-danger` 与 `color-text-on-accent` 的实心按钮组合必须达到 WCAG AA，不得使用浅色 `color-text-primary` 代替
 
 ### 输入框（Input）
 
@@ -357,7 +363,7 @@ SaaS 与持续工作界面采用更紧凑的角色范围：
 | 属性 | 规范 |
 |------|------|
 | 内边距 | 16–24px，按产品密度在范围内选择 |
-| 圆角 | `radius-card`（36px）+ `corner-shape: squircle` |
+| 圆角 | 桌面 `radius-card`（36px）；移动 `radius-card-mobile`（28–36px、默认 32px）；始终 `corner-shape: squircle` |
 | 材质 | 用户选择的实体材质或液态玻璃 |
 | 标题 | 桌面 16–20px / 移动 16–18px |
 | 边界 | 使用所选材质对应的背景、边框和阴影 token |
@@ -370,6 +376,7 @@ SaaS 与持续工作界面采用更紧凑的角色范围：
 - 实体材质使用 `color-bg-surface`、默认边框和实体阴影
 - 液态玻璃必须有可辨识背景内容、足够文字对比度和边界；背景不可读时改用实体材质
 - 用户开启减少透明时，玻璃降级为实体背景并关闭 `backdrop-filter`
+- 浏览器不支持 backdrop filter 时，玻璃降级为实体背景、实体边框和 solid shadow，并关闭滤镜
 - 可点击卡片必须实现 `hover`、`active` 和 `focus-visible`；不可点击卡片不得伪造交互反馈
 - 移动端可适度降低半径，但必须保持连续曲率，不得退回控件级圆角
 
@@ -457,15 +464,15 @@ Tokens 到各平台的具体落地方式，完整模板见 `platform-implementat
 
 | 平台 | Token 载体 | 引用方式 |
 |------|-----------|---------|
-| React + Tailwind | `tailwind.config.js` | `className="bg-primary-700 p-4"` |
-| React/Vue + CSS 变量 | `theme.css` 的 `:root` | `background: var(--color-primary-700)` |
-| Vue + Element Plus | SCSS 变量覆盖 | `$--color-primary: #9A6ABA` |
-| 小程序 | `app.wxss` 的 `page` 选择器 | `background: var(--color-primary-700)` |
-| React Native | `theme.ts` 常量对象 | `backgroundColor: theme.colors.primary[700]` |
-| 传统页面 | `theme.css` 的 `:root` | `background: var(--color-primary-700)` |
+| React + Tailwind | `tailwind.config.js` | `className="bg-brand p-4"` |
+| React/Vue + CSS 变量 | `theme.css` 的 `:root` | `background: var(--color-primary)` |
+| Vue + Element Plus | 语义变量覆盖 | `--el-color-primary: var(--color-primary)` |
+| 小程序 | `app.wxss` 的 `page` 选择器 | `background: var(--color-primary)` |
+| React Native | `theme.ts` 语义对象 | `backgroundColor: theme.colors.semantic.primary` |
+| 传统页面 | `theme.css` 的 `:root` | `background: var(--color-primary)` |
 
 **跨平台一致性要求：**
-- 所有平台的 token 名称保持一致（`primary-700` 在任何平台都叫 `primary-700`）
+- 默认暗色业务代码只使用语义 `color-primary` 或平台映射后的 `bg-brand`
 - 数值单位按平台转换：Web 用 px，小程序可用 rpx，RN 用无单位数字
 - 单一数据源：`design-tokens.json` 为唯一真源，各平台配置由它派生
 

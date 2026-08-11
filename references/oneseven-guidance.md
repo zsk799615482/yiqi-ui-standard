@@ -94,9 +94,9 @@
 - Section Title：桌面 22–24px，移动 20–22px
 - Card Title：桌面 16–20px，移动 16–18px
 - SaaS Page Title：20–24px；SaaS Panel Title：16–18px；SaaS Body / Controls：13–16px
-- 所有独立卡片使用 36px 连续大圆角和 squircle 曲率；控件、表格、工具栏和 Modal 使用各自的控件或容器级圆角
+- 所有独立卡片桌面使用 36px 连续大圆角；移动端使用 28–36px、默认 32px，并保持 squircle；不得低于 28px，不得另建小圆角系统
 - 生成前必须询问使用实体材质还是液态玻璃；玻璃仅在用户选择后启用
-- 玻璃材质不得嵌套，且减少透明偏好下必须降级为实体背景并关闭 backdrop
+- 玻璃材质不得嵌套；减少透明或不支持 backdrop filter 时必须降级为实体背景、实体边框和 solid shadow，并关闭 backdrop
 - 在上述范围内按产品主类型、页面任务、容器尺度和信息密度选值；布局、控件尺寸与局部密度继续产品化校准
 
 以下情况应判定为问题：

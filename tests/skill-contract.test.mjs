@@ -34,6 +34,71 @@ const markdownSubsection = (markdown, heading) => {
   );
 };
 
+const cssBlock = (source, prelude) => {
+  let searchFrom = 0;
+
+  while (searchFrom < source.length) {
+    const start = source.indexOf(prelude, searchFrom);
+    if (start === -1) {
+      assert.fail(`missing CSS block: ${prelude}`);
+    }
+
+    let openingBrace = start + prelude.length;
+    while (/\s/.test(source[openingBrace] ?? '')) {
+      openingBrace += 1;
+    }
+
+    if (source[openingBrace] !== '{') {
+      searchFrom = start + prelude.length;
+      continue;
+    }
+
+    let depth = 0;
+    let quote = null;
+    let inComment = false;
+
+    for (let index = openingBrace; index < source.length; index += 1) {
+      const character = source[index];
+      const nextCharacter = source[index + 1];
+
+      if (inComment) {
+        if (character === '*' && nextCharacter === '/') {
+          inComment = false;
+          index += 1;
+        }
+        continue;
+      }
+
+      if (quote) {
+        if (character === '\\') {
+          index += 1;
+        } else if (character === quote) {
+          quote = null;
+        }
+        continue;
+      }
+
+      if (character === '/' && nextCharacter === '*') {
+        inComment = true;
+        index += 1;
+      } else if (character === '"' || character === "'") {
+        quote = character;
+      } else if (character === '{') {
+        depth += 1;
+      } else if (character === '}') {
+        depth -= 1;
+        if (depth === 0) {
+          return source.slice(openingBrace + 1, index);
+        }
+      }
+    }
+
+    assert.fail(`unclosed CSS block: ${prelude}`);
+  }
+
+  assert.fail(`missing CSS block: ${prelude}`);
+};
+
 const assertMarkdownListItems = (section, items, label) => {
   for (const item of items) {
     assert.match(
@@ -426,6 +491,7 @@ test('v2 tokens are dark-first and include role typography', async () => {
   );
   assert.equal(tokens.semanticColors.background.page, '{darkColors.page}');
   assert.equal(tokens.semanticColors.text.inverse, '{colors.common.white}');
+  assert.equal(tokens.semanticColors.text.onAccent, '{darkColors.page}');
   assert.equal(tokens.semanticColors.status.info.foreground, '#D7BCE8');
   assert.equal(
     tokens.semanticColors.background.success,
@@ -472,13 +538,45 @@ test('v2 tokens are dark-first and include role typography', async () => {
     min: '13px',
     max: '16px',
   });
+  assert.equal(tokens.typography.fontSize['5xl'], '42px');
+  assert.equal(tokens.typography.lineHeight['5xl'], '48px');
 });
 
 test('cards use one continuous large-radius token and two materials', async () => {
   const tokens = JSON.parse(await read('design-tokens.json'));
   const theme = await read('theme.css');
+  const cardBlock = cssBlock(theme, '[data-ui-card]');
+  const solidBlock = cssBlock(
+    theme,
+    ':root[data-ui-card-material="solid"]',
+  );
+  const glassBlock = cssBlock(
+    theme,
+    ':root[data-ui-card-material="liquid-glass"]',
+  );
+  const glassFilterBlock = cssBlock(
+    theme,
+    ':root[data-ui-card-material="liquid-glass"] [data-ui-card]',
+  );
+  const reducedTransparencyBlock = cssBlock(
+    theme,
+    '@media (prefers-reduced-transparency: reduce)',
+  );
+  const reducedGlassBlock = cssBlock(
+    reducedTransparencyBlock,
+    ':root[data-ui-card-material="liquid-glass"]',
+  );
+  const reducedFilterBlock = cssBlock(
+    reducedTransparencyBlock,
+    ':root[data-ui-card-material="liquid-glass"] [data-ui-card]',
+  );
 
   assert.equal(tokens.borderRadius.card, '36px');
+  assert.deepEqual(tokens.borderRadius.cardMobile, {
+    min: '28px',
+    default: '32px',
+    max: '36px',
+  });
   assert.deepEqual(tokens.cardMaterials, {
     defaultQuestionRequired: true,
     solid: {
@@ -492,34 +590,45 @@ test('cards use one continuous large-radius token and two materials', async () =
       backdropBlur: '24px',
       backdropSaturation: '140%',
       reducedTransparencyFallback: '{darkColors.surface}',
+      unsupportedBackdropFallback: {
+        background: '{darkColors.surface}',
+        border: '{darkColors.border}',
+        shadow: '0 18px 60px rgba(0, 0, 0, 0.22)',
+        backdropFilter: 'none',
+      },
     },
   });
 
   assert.match(theme, /color-scheme:\s*dark/);
   assert.match(theme, /--radius-card:\s*36px/);
-  assert.match(
-    theme,
-    /\[data-ui-card\]\s*\{[\s\S]*border-radius:\s*var\(--radius-card\)[\s\S]*corner-shape:\s*squircle/,
-  );
-  assert.match(theme, /:root\[data-ui-card-material="solid"\]/);
-  assert.match(theme, /:root\[data-ui-card-material="liquid-glass"\]/);
+  assert.match(cardBlock, /border-radius:\s*var\(--radius-card\)/);
+  assert.match(cardBlock, /corner-shape:\s*squircle/);
+  assert.match(cardBlock, /box-shadow:\s*var\(--card-shadow\)/);
+  assert.match(solidBlock, /--card-shadow:\s*var\(--card-solid-shadow\)/);
   assert.doesNotMatch(theme, /data-card-material=/);
+  assert.match(glassBlock, /--card-shadow:\s*none/);
   assert.match(
-    theme,
-    /:root\[data-ui-card-material="liquid-glass"\]\s*\{[^}]*--card-shadow:\s*none;/,
-  );
-  assert.match(
-    theme,
+    glassFilterBlock,
     /backdrop-filter:\s*blur\(var\(--card-glass-blur\)\)\s+saturate\(var\(--card-glass-saturation\)\)/,
   );
   assert.match(
-    theme,
-    /@media\s*\(prefers-reduced-transparency:\s*reduce\)[\s\S]*:root\[data-ui-card-material="liquid-glass"\]\s*\{[^}]*--card-shadow:\s*var\(--card-solid-shadow\);/,
+    reducedGlassBlock,
+    /--card-background:\s*var\(--card-solid-bg\)/,
   );
+  assert.match(
+    reducedGlassBlock,
+    /--card-border:\s*var\(--card-solid-border\)/,
+  );
+  assert.match(
+    reducedGlassBlock,
+    /--card-shadow:\s*var\(--card-solid-shadow\)/,
+  );
+  assert.match(reducedFilterBlock, /backdrop-filter:\s*none/);
 });
 
 test('theme CSS exposes the approved v2 public token interface', async () => {
   const theme = await read('theme.css');
+  const rootBlock = cssBlock(theme, ':root');
   const expectedVariables = {
     '--text-marketing-h1-min': '36px',
     '--text-marketing-h1-max': '42px',
@@ -543,6 +652,9 @@ test('theme CSS exposes the approved v2 public token interface', async () => {
     '--text-saas-panel-title-max': '18px',
     '--text-saas-body-min': '13px',
     '--text-saas-body-max': '16px',
+    '--radius-card-mobile-min': '28px',
+    '--radius-card-mobile-default': '32px',
+    '--radius-card-mobile-max': '36px',
     '--card-solid-bg': 'var(--color-bg-surface)',
     '--card-solid-border': 'var(--color-border-default)',
     '--card-solid-shadow': '0 18px 60px rgba(0, 0, 0, 0.22)',
@@ -554,34 +666,80 @@ test('theme CSS exposes the approved v2 public token interface', async () => {
 
   for (const [name, value] of Object.entries(expectedVariables)) {
     assert.match(
-      theme,
+      rootBlock,
       new RegExp(`${escapeRegExp(name)}:\\s*${escapeRegExp(value)};`),
       `missing or incorrect public CSS variable: ${name}`,
     );
   }
 
-  assert.doesNotMatch(theme, /--type-/);
-  assert.doesNotMatch(theme, /--text-page-title-(?:min|max):/);
-  assert.doesNotMatch(theme, /--text-section-title-(?:min|max):/);
-  assert.doesNotMatch(theme, /--text-card-title-(?:min|max):/);
-  assert.doesNotMatch(theme, /--color-dark-elevated/);
-  assert.match(theme, /--color-dark-surface-elevated:\s*#1b1b20/i);
+  assert.doesNotMatch(rootBlock, /--type-/);
+  assert.doesNotMatch(rootBlock, /--text-page-title-(?:min|max):/);
+  assert.doesNotMatch(rootBlock, /--text-section-title-(?:min|max):/);
+  assert.doesNotMatch(rootBlock, /--text-card-title-(?:min|max):/);
+  assert.doesNotMatch(rootBlock, /--color-dark-elevated/);
+  assert.match(rootBlock, /--color-dark-surface-elevated:\s*#1b1b20/i);
   assert.match(
-    theme,
+    rootBlock,
     /--color-bg-elevated:\s*var\(--color-dark-surface-elevated\)/,
   );
-  assert.match(theme, /--color-text-inverse:\s*#fff(?:fff)?;/i);
+  assert.match(rootBlock, /--color-text-inverse:\s*#fff(?:fff)?;/i);
   assert.match(
-    theme,
+    rootBlock,
+    /--color-text-on-accent:\s*var\(--color-dark-page\)/,
+  );
+  assert.match(
+    rootBlock,
     /--color-bg-success:\s*rgba\(50,\s*122,\s*91,\s*0\.18\)/,
   );
   assert.match(
-    theme,
+    rootBlock,
     /--color-bg-danger:\s*rgba\(185,\s*74,\s*90,\s*0\.18\)/,
   );
-  assert.match(theme, /--color-border-success:\s*#327a5b/i);
-  assert.match(theme, /--color-border-danger:\s*#b94a5a/i);
-  assert.match(theme, /--color-info-text:\s*#d7bce8;/i);
+  assert.match(rootBlock, /--color-border-success:\s*#327a5b/i);
+  assert.match(rootBlock, /--color-border-danger:\s*#b94a5a/i);
+  assert.match(rootBlock, /--color-info-text:\s*#d7bce8;/i);
+  assert.match(rootBlock, /--text-5xl:\s*42px/);
+  assert.doesNotMatch(rootBlock, /--text-[^:]+:\s*48px/);
+});
+
+test('card runtime fallbacks are scoped to support and mobile blocks', async () => {
+  const theme = await read('theme.css');
+  const unsupportedBackdropBlock = cssBlock(
+    theme,
+    '@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)))',
+  );
+  const unsupportedGlassBlock = cssBlock(
+    unsupportedBackdropBlock,
+    ':root[data-ui-card-material="liquid-glass"]',
+  );
+  const unsupportedFilterBlock = cssBlock(
+    unsupportedBackdropBlock,
+    ':root[data-ui-card-material="liquid-glass"] [data-ui-card]',
+  );
+  const mobileBlock = cssBlock(theme, '@media (max-width: 767px)');
+  const mobileRootBlock = cssBlock(mobileBlock, ':root');
+
+  assert.match(
+    unsupportedGlassBlock,
+    /--card-background:\s*var\(--card-solid-bg\)/,
+  );
+  assert.match(
+    unsupportedGlassBlock,
+    /--card-border:\s*var\(--card-solid-border\)/,
+  );
+  assert.match(
+    unsupportedGlassBlock,
+    /--card-shadow:\s*var\(--card-solid-shadow\)/,
+  );
+  assert.match(unsupportedFilterBlock, /backdrop-filter:\s*none/);
+  assert.match(
+    unsupportedFilterBlock,
+    /-webkit-backdrop-filter:\s*none/,
+  );
+  assert.match(
+    mobileRootBlock,
+    /--radius-card:\s*var\(--radius-card-mobile-default\)/,
+  );
 });
 
 test('SKILL treats v2 visual boundaries as mandatory', async () => {
@@ -610,6 +768,9 @@ test('visual references document dark typography and card boundaries', async () 
   const visual = await read('references/visual-system.md');
   const guidance = await read('references/oneseven-guidance.md');
   const card = markdownSubsection(visual, '卡片（Card）');
+  const button = markdownSubsection(visual, '按钮（Button）');
+  const shadow = markdownSubsection(visual, '阴影 Tokens');
+  const platformMapping = markdownSection(visual, '平台映射概览');
 
   for (const document of [visual, guidance]) {
     assert.match(document, /默认暗色/);
@@ -624,6 +785,10 @@ test('visual references document dark typography and card boundaries', async () 
     assert.match(document, /20–24px/);
     assert.match(document, /13–16px/);
     assert.match(document, /36px/);
+    assert.match(document, /28–36px/);
+    assert.match(document, /默认 32px/);
+    assert.match(document, /不得低于 28px/);
+    assert.match(document, /不得另建小圆角系统/);
     assert.match(document, /实体材质[\s\S]*液态玻璃|液态玻璃[\s\S]*实体材质/);
     assert.match(document, /生成前必须询问/);
     assert.match(document, /玻璃卡片不得嵌套|玻璃材质不得嵌套/);
@@ -654,6 +819,32 @@ test('visual references document dark typography and card boundaries', async () 
     visual,
     /浅色或品牌实心背景上的反色文本/,
   );
+  assert.match(visual, /基础 `text-5xl` 为 42px/);
+  assert.match(visual, /不得超过排版角色上限/);
+  assert.doesNotMatch(visual, /`text-5xl` \| 48px/);
+  assert.match(
+    button,
+    /\| primary \|[^|]*\| color-text-on-accent \|/,
+  );
+  assert.match(
+    button,
+    /\| danger \|[^|]*\| color-text-on-accent \|/,
+  );
+  assert.match(button, /color-text-on-accent[\s\S]*WCAG AA/);
+  assert.doesNotMatch(
+    button,
+    /\| (?:primary|danger) \|[^|]*\| color-text-primary \|/,
+  );
+  assert.doesNotMatch(shadow, /卡片默认态|卡片悬停/);
+  assert.match(shadow, /shadow-sm[\s\S]*轻微控件表面/);
+  assert.match(shadow, /shadow-md[\s\S]*菜单/);
+  assert.match(
+    shadow,
+    /卡片仅使用材质专用 shadow[\s\S]*液态玻璃无阴影[\s\S]*fallback 使用实体 shadow/,
+  );
+  assert.match(platformMapping, /color-primary/);
+  assert.match(platformMapping, /bg-brand/);
+  assert.doesNotMatch(platformMapping, /primary-700/);
 });
 
 test('OneSeven review language enforces shared boundaries', async () => {
