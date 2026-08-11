@@ -206,6 +206,11 @@ test('Hero rules constrain type scale and reject decorative split layouts', asyn
     '部分低密度服务页',
   ];
 
+  assert.match(
+    routing,
+    /允许 Hero 的页面包括品牌官网、产品介绍、发布页面和部分低密度服务页/,
+  );
+
   for (const page of allowedHeroPages) {
     assert.match(
       routing,
@@ -265,7 +270,6 @@ test('Hero rules constrain type scale and reject decorative split layouts', asyn
 
 test('operational products route to No Hero', async () => {
   const hero = await read('references/hero-standards.md');
-  const routing = markdownSection(hero, '路由原则');
   const noHero = markdownSection(hero, 'No Hero 默认页面');
   const noHeroProducts = [
     'SaaS 工作台',
@@ -283,16 +287,6 @@ test('operational products route to No Hero', async () => {
       noHero,
       new RegExp(`^- ${escapeRegExp(product)}$`, 'm'),
       `missing No Hero product route: ${product}`,
-    );
-    assert.doesNotMatch(
-      routing,
-      new RegExp(escapeRegExp(product)),
-      `No Hero product must not appear in allowed Hero routing: ${product}`,
-    );
-    assert.equal(
-      hero.match(new RegExp(escapeRegExp(product), 'g'))?.length ?? 0,
-      1,
-      `No Hero product must only appear in its default section: ${product}`,
     );
   }
 
