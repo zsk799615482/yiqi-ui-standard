@@ -295,3 +295,103 @@ test('operational products route to No Hero', async () => {
     /No Hero 页面直接显示导航、当前任务、数据、状态和主要操作/,
   );
 });
+
+test('SaaS reference includes all approved workbench shells', async () => {
+  const skill = await read('SKILL.md');
+  const saas = await read('references/saas-workbench-standards.md');
+  const commonRules = markdownSection(saas, '共同规则');
+  const operations = markdownSection(saas, '运营管理型');
+  const aiCreation = markdownSection(saas, 'AI 创作型');
+  const analytics = markdownSection(saas, '数据分析型');
+
+  assert.match(skill, /references\/saas-workbench-standards\.md/);
+  assert.match(skill, /### 第 4 步：SaaS 壳层/);
+  assert.ok(
+    skill.indexOf('第 3 步：Hero / No Hero') <
+      skill.indexOf('第 4 步：SaaS 壳层'),
+    'Hero / No Hero routing must precede SaaS shell selection',
+  );
+  assert.match(
+    skill,
+    /运营管理、AI 创作或数据分析[\s\S]*读取 `references\/saas-workbench-standards\.md`[\s\S]*选择对应壳层/,
+  );
+  assert.match(skill, /三类都 No Hero/);
+  assert.match(
+    skill,
+    /规划阶段只记录已批准壳层方向，不生成工作台实现/,
+  );
+  assert.match(
+    skill,
+    /代码实现\/审查阶段在页面主要任务和 Hero 路由后应用壳层/,
+  );
+
+  const sharedRules = [
+    '默认暗色',
+    '不生成营销 Hero',
+    '页面标题 20–24px',
+    '面板标题 16–18px',
+    '卡片标题 16–18px',
+    '正文和控件 13–16px',
+    '主要任务、数据和状态进入第一视口',
+    '控件和固定格式区域稳定尺寸',
+    '不用装饰卡片填充页面，不堆叠装饰卡片',
+    '连续大圆角不能损害表格、筛选和高密度信息空间效率',
+    '三类都 No Hero',
+  ];
+
+  for (const rule of sharedRules) {
+    assert.match(
+      commonRules,
+      new RegExp(escapeRegExp(rule)),
+      `missing SaaS common rule: ${rule}`,
+    );
+  }
+
+  const operationalRules = [
+    '固定/可折叠侧栏',
+    '上下文工具栏',
+    '搜索、筛选和批量操作',
+    '表格、列表、审批、项目和状态',
+    '扫描、比较和操作效率',
+  ];
+
+  for (const rule of operationalRules) {
+    assert.match(
+      operations,
+      new RegExp(escapeRegExp(rule)),
+      `missing operational workbench rule: ${rule}`,
+    );
+  }
+
+  const aiCreationRules = [
+    '导航/项目栏',
+    '主画布/对话区/输出工作区',
+    '参数检查器/上下文面板',
+    '运行、等待、完成、错误和恢复状态',
+    '输入输出保持空间和任务关联',
+  ];
+
+  for (const rule of aiCreationRules) {
+    assert.match(
+      aiCreation,
+      new RegExp(escapeRegExp(rule)),
+      `missing AI creation workbench rule: ${rule}`,
+    );
+  }
+
+  const analyticsRules = [
+    '导航/时间范围',
+    '维度筛选',
+    '指标、趋势、比较和明细',
+    '异常状态/数据解释',
+    '数字对齐、单位和时间范围清晰',
+  ];
+
+  for (const rule of analyticsRules) {
+    assert.match(
+      analytics,
+      new RegExp(escapeRegExp(rule)),
+      `missing analytics workbench rule: ${rule}`,
+    );
+  }
+});
