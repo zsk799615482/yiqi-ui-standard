@@ -1,0 +1,634 @@
+#!/usr/bin/env node
+
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const SAAS_TYPES = new Set([
+  'saas-operations',
+  'saas-ai-workspace',
+  'saas-analytics',
+]);
+
+const VOID_ELEMENTS = new Set([
+  'area',
+  'base',
+  'br',
+  'col',
+  'embed',
+  'hr',
+  'img',
+  'input',
+  'link',
+  'meta',
+  'param',
+  'source',
+  'track',
+  'wbr',
+]);
+
+const INTERACTIVE_ELEMENTS = new Set([
+  'button',
+  'input',
+  'select',
+  'textarea',
+]);
+
+const parseAttributes = (source) => {
+  const attributes = new Map();
+  const pattern =
+    /([^\s=/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+  let match;
+
+  while ((match = pattern.exec(source)) !== null) {
+    const name = match[1].toLowerCase();
+    const value = match[2] ?? match[3] ?? match[4] ?? '';
+    attributes.set(name, value);
+  }
+
+  return attributes;
+};
+
+const findTagEnd = (html, start) => {
+  let quote = null;
+
+  for (let index = start; index < html.length; index += 1) {
+    const character = html[index];
+
+    if (quote) {
+      if (character === quote) {
+        quote = null;
+      }
+    } else if (character === '"' || character === "'") {
+      quote = character;
+    } else if (character === '>') {
+      return index;
+    }
+  }
+
+  return html.length - 1;
+};
+
+const parseDocument = (html) => {
+  const elements = [];
+  const styles = [];
+  const stack = [];
+  let htmlAttributes = null;
+  let hasNestedCards = false;
+  let index = 0;
+
+  while (index < html.length) {
+    const opening = html.indexOf('<', index);
+    if (opening === -1) {
+      break;
+    }
+
+    if (html.startsWith('<!--', opening)) {
+      const commentEnd = html.indexOf('-->', opening + 4);
+      index = commentEnd === -1 ? html.length : commentEnd + 3;
+      continue;
+    }
+
+    const tagEnd = findTagEnd(html, opening + 1);
+    const tagSource = html.slice(opening + 1, tagEnd).trim();
+    index = tagEnd + 1;
+
+    if (!tagSource || tagSource[0] === '!' || tagSource[0] === '?') {
+      continue;
+    }
+
+    if (tagSource[0] === '/') {
+      const closingName = tagSource
+        .slice(1)
+        .trim()
+        .split(/\s+/, 1)[0]
+        .toLowerCase();
+      const stackIndex = stack.map(({ name }) => name).lastIndexOf(closingName);
+      if (stackIndex !== -1) {
+        stack.length = stackIndex;
+      }
+      continue;
+    }
+
+    const nameMatch = tagSource.match(/^([^\s/>]+)/);
+    if (!nameMatch) {
+      continue;
+    }
+
+    const name = nameMatch[1].toLowerCase();
+    const selfClosing = /\/\s*$/.test(tagSource) || VOID_ELEMENTS.has(name);
+    const attributeSource = tagSource
+      .slice(nameMatch[0].length)
+      .replace(/\/\s*$/, '');
+    const attributes = parseAttributes(attributeSource);
+    const isCard = attributes.has('data-ui-card');
+
+    if (isCard && stack.some((element) => element.isCard)) {
+      hasNestedCards = true;
+    }
+
+    const element = { name, attributes, isCard };
+    elements.push(element);
+
+    if (name === 'html' && htmlAttributes === null) {
+      htmlAttributes = attributes;
+    }
+
+    if (name === 'style' || name === 'script') {
+      const closingPattern = new RegExp(`<\\/\\s*${name}\\s*>`, 'ig');
+      closingPattern.lastIndex = index;
+      const closingMatch = closingPattern.exec(html);
+      const contentEnd = closingMatch?.index ?? html.length;
+
+      if (name === 'style') {
+        styles.push(html.slice(index, contentEnd));
+      }
+
+      index = closingMatch ? closingPattern.lastIndex : html.length;
+      continue;
+    }
+
+    if (!selfClosing) {
+      stack.push(element);
+    }
+  }
+
+  return {
+    elements,
+    hasNestedCards,
+    htmlAttributes: htmlAttributes ?? new Map(),
+    styleSource: styles.join('\n'),
+  };
+};
+
+const findClosingBrace = (source, openingBrace) => {
+  let depth = 0;
+  let quote = null;
+  let inComment = false;
+
+  for (let index = openingBrace; index < source.length; index += 1) {
+    const character = source[index];
+    const nextCharacter = source[index + 1];
+
+    if (inComment) {
+      if (character === '*' && nextCharacter === '/') {
+        inComment = false;
+        index += 1;
+      }
+      continue;
+    }
+
+    if (quote) {
+      if (character === '\\') {
+        index += 1;
+      } else if (character === quote) {
+        quote = null;
+      }
+      continue;
+    }
+
+    if (character === '/' && nextCharacter === '*') {
+      inComment = true;
+      index += 1;
+    } else if (character === '"' || character === "'") {
+      quote = character;
+    } else if (character === '{') {
+      depth += 1;
+    } else if (character === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        return index;
+      }
+    }
+  }
+
+  return -1;
+};
+
+const collectCssBlocks = (source) => {
+  const blocks = [];
+  let cursor = 0;
+
+  while (cursor < source.length) {
+    const openingBrace = source.indexOf('{', cursor);
+    if (openingBrace === -1) {
+      break;
+    }
+
+    const closingBrace = findClosingBrace(source, openingBrace);
+    if (closingBrace === -1) {
+      break;
+    }
+
+    const preludeBoundary = Math.max(
+      source.lastIndexOf('}', openingBrace - 1),
+      source.lastIndexOf(';', openingBrace - 1),
+    );
+    const prelude = source.slice(preludeBoundary + 1, openingBrace).trim();
+    const body = source.slice(openingBrace + 1, closingBrace);
+    blocks.push({ prelude, body });
+
+    if (prelude.startsWith('@')) {
+      blocks.push(...collectCssBlocks(body));
+    }
+
+    cursor = closingBrace + 1;
+  }
+
+  return blocks;
+};
+
+const cssDeclarationValues = (body, property) => {
+  const escapedProperty = property.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = new RegExp(
+    `(?:^|[;{])\\s*${escapedProperty}\\s*:\\s*([^;}]+)`,
+    'gi',
+  );
+  const values = [];
+  let match;
+
+  while ((match = pattern.exec(body)) !== null) {
+    values.push(match[1].trim());
+  }
+
+  return values;
+};
+
+const largestPxValue = (source) => {
+  const values = [...source.matchAll(/(-?\d*\.?\d+)\s*px\b/gi)].map(
+    (match) => Number(match[1]),
+  );
+  return values.length === 0 ? null : Math.max(...values);
+};
+
+const selectorTargetsHeading = (selector) =>
+  /(^|[\s>+~,])h1(?=$|[\s>+~,.:[#])/i.test(selector) ||
+  /\.display-title\b/i.test(selector) ||
+  /\[\s*data-ui-role\s*=\s*["']hero-title["']\s*\]/i.test(selector);
+
+const classListIncludes = (attributes, className) =>
+  (attributes.get('class') ?? '').split(/\s+/).includes(className);
+
+const hasHeroEvidence = (elements) =>
+  elements.some(
+    ({ name, attributes }) =>
+      (['img', 'video', 'canvas'].includes(name) &&
+        attributes.has('data-ui-hero-media')) ||
+      attributes.has('data-ui-product-state'),
+  );
+
+const hasSaasHero = (elements) =>
+  elements.some(
+    ({ name, attributes }) =>
+      (['section', 'header', 'div'].includes(name) &&
+        classListIncludes(attributes, 'hero')) ||
+      attributes.get('data-ui-role') === 'hero',
+  );
+
+const hasInteractiveElement = (elements) =>
+  elements.some(
+    ({ name, attributes }) =>
+      INTERACTIVE_ELEMENTS.has(name) ||
+      (name === 'a' && attributes.has('href')),
+  );
+
+const rootBlocks = (blocks) =>
+  blocks.filter(({ prelude }) =>
+    prelude
+      .split(',')
+      .map((selector) => selector.trim())
+      .includes(':root'),
+  );
+
+const rootDeclarationValues = (blocks, property) =>
+  rootBlocks(blocks).flatMap(({ body }) =>
+    cssDeclarationValues(body, property),
+  );
+
+const hasCssDeclaration = (blocks, property) =>
+  blocks.some(
+    ({ prelude, body }) =>
+      !prelude.startsWith('@') &&
+      cssDeclarationValues(body, property).length > 0,
+  );
+
+const hasMediaFeature = (blocks, feature, value) =>
+  blocks.some(
+    ({ prelude }) =>
+      prelude.startsWith('@media') &&
+      new RegExp(`${feature}\\s*:\\s*${value}`, 'i').test(prelude),
+  );
+
+const hasDecorativeCircle = (blocks) =>
+  blocks.some(({ prelude, body }) => {
+    if (prelude.startsWith('@')) {
+      return false;
+    }
+
+    const width = Math.max(
+      ...cssDeclarationValues(body, 'width')
+        .map(largestPxValue)
+        .filter((value) => value !== null),
+      -Infinity,
+    );
+    const height = Math.max(
+      ...cssDeclarationValues(body, 'height')
+        .map(largestPxValue)
+        .filter((value) => value !== null),
+      -Infinity,
+    );
+    const isRound = cssDeclarationValues(body, 'border-radius').some((value) =>
+      /\b50%/.test(value),
+    );
+    const isNamedCircle = /(?:orb|orbit|sphere|circle)/i.test(prelude);
+    const hasGeneratedContent = cssDeclarationValues(body, 'content').length > 0;
+
+    return (
+      width >= 96 &&
+      height >= 96 &&
+      isRound &&
+      (isNamedCircle || hasGeneratedContent)
+    );
+  });
+
+const hasHeroSplit = (blocks) => {
+  const heroUsesColumns = blocks.some(
+    ({ prelude, body }) =>
+      /\.hero\b/i.test(prelude) &&
+      cssDeclarationValues(body, 'grid-template-columns').length > 0,
+  );
+  const hasHeroAside = blocks.some(({ prelude }) =>
+    /\.hero-aside\b/i.test(prelude),
+  );
+  return heroUsesColumns && hasHeroAside;
+};
+
+const createIssue = (code, message) => ({
+  code,
+  severity: 'error',
+  message,
+});
+
+export const analyzeHtml = (html, options = {}) => {
+  const document = parseDocument(String(html));
+  const { elements, htmlAttributes, styleSource } = document;
+  const blocks = collectCssBlocks(styleSource);
+  const issues = [];
+  const issueCodes = new Set();
+  const addIssue = (code, message) => {
+    if (!issueCodes.has(code)) {
+      issueCodes.add(code);
+      issues.push(createIssue(code, message));
+    }
+  };
+
+  const metadataPageType = htmlAttributes.get('data-ui-page-type');
+  const hasPageTypeOverride =
+    typeof options.pageType === 'string' && options.pageType.length > 0;
+  const pageType = hasPageTypeOverride
+    ? options.pageType
+    : metadataPageType || 'marketing';
+  const hero = htmlAttributes.get('data-ui-hero');
+  const cardMaterial = htmlAttributes.get('data-ui-card-material');
+  const isSaas = SAAS_TYPES.has(pageType);
+  const heroEvidence = hasHeroEvidence(elements);
+  const cards = elements.filter(({ isCard }) => isCard);
+
+  if (!metadataPageType && !hasPageTypeOverride) {
+    addIssue(
+      'page-type-required',
+      'The html element must declare data-ui-page-type.',
+    );
+  }
+
+  if (!hero) {
+    addIssue(
+      'hero-metadata-required',
+      'The html element must declare data-ui-hero.',
+    );
+  }
+
+  const declaresDarkColorScheme = blocks.some(({ prelude, body }) =>
+    !prelude.startsWith('@') &&
+    cssDeclarationValues(body, 'color-scheme').some((value) =>
+      /\bdark\b/i.test(value),
+    ),
+  );
+  if (!declaresDarkColorScheme) {
+    addIssue(
+      'dark-theme-required',
+      'The stylesheet must declare color-scheme: dark.',
+    );
+  }
+
+  const headingLimit = isSaas ? 24 : 42;
+  const headingSizes = blocks
+    .filter(({ prelude }) => selectorTargetsHeading(prelude))
+    .flatMap(({ body }) => cssDeclarationValues(body, 'font-size'))
+    .map(largestPxValue)
+    .filter((value) => value !== null);
+  if (headingSizes.some((value) => value > headingLimit)) {
+    addIssue(
+      'heading-too-large',
+      `Heading font sizes must not exceed ${headingLimit}px for ${pageType}.`,
+    );
+  }
+
+  if (cards.length > 0) {
+    if (!cardMaterial) {
+      addIssue(
+        'card-material-required',
+        'Pages with data-ui-card elements must declare data-ui-card-material.',
+      );
+    }
+
+    const radius = Math.max(
+      ...rootDeclarationValues(blocks, '--radius-card')
+        .map(largestPxValue)
+        .filter((value) => value !== null),
+      -Infinity,
+    );
+    if (radius < 36) {
+      addIssue(
+        'card-radius-too-small',
+        'The root --radius-card value must be at least 36px.',
+      );
+    }
+
+    const cornerShapes = [
+      ...rootDeclarationValues(blocks, '--corner-shape'),
+      ...rootDeclarationValues(blocks, 'corner-shape'),
+    ];
+    if (!cornerShapes.some((value) => /\bsquircle\b/i.test(value))) {
+      addIssue(
+        'corner-shape-required',
+        'Cards require a root squircle corner shape declaration.',
+      );
+    }
+  }
+
+  if (document.hasNestedCards) {
+    addIssue('nested-card', 'A data-ui-card must not contain another card.');
+  }
+
+  if (
+    cardMaterial === 'liquid-glass' &&
+    (!(
+      hasCssDeclaration(blocks, 'backdrop-filter') ||
+      hasCssDeclaration(blocks, '-webkit-backdrop-filter')
+    ) ||
+      !hasMediaFeature(blocks, 'prefers-reduced-transparency', 'reduce'))
+  ) {
+    addIssue(
+      'liquid-glass-fallback-required',
+      'Liquid glass requires backdrop filtering and a reduced-transparency fallback.',
+    );
+  }
+
+  if (hasDecorativeCircle(blocks)) {
+    addIssue(
+      'decorative-circle',
+      'Large decorative circles are not permitted.',
+    );
+  }
+
+  if (hasHeroSplit(blocks) && !heroEvidence) {
+    addIssue(
+      'hero-split-decorative',
+      'Split heroes require meaningful product or media evidence.',
+    );
+  }
+
+  if (hero === 'approved' && !heroEvidence) {
+    addIssue(
+      'hero-evidence-required',
+      'Approved heroes require product-state or hero-media evidence.',
+    );
+  }
+
+  if (isSaas && hasSaasHero(elements)) {
+    addIssue(
+      'saas-hero-forbidden',
+      'SaaS workspaces must not render a hero container.',
+    );
+  }
+
+  const cssWithoutCustomProperties = styleSource.replace(
+    /--[\w-]+\s*:[^;{}]*(?:;|(?=\}))/g,
+    '',
+  );
+  if (/#9a6aba\b/i.test(cssWithoutCustomProperties)) {
+    addIssue(
+      'brand-color-hardcoded',
+      'Use a design token instead of hardcoding #9a6aba.',
+    );
+  }
+
+  const hasFocusVisibleRule = blocks.some(
+    ({ prelude }) =>
+      !prelude.startsWith('@') && /:focus-visible\b/i.test(prelude),
+  );
+  if (hasInteractiveElement(elements) && !hasFocusVisibleRule) {
+    addIssue(
+      'focus-visible-required',
+      'Interactive elements require a :focus-visible style.',
+    );
+  }
+
+  const motionProperties = [
+    'animation',
+    'animation-name',
+    'animation-duration',
+    'animation-delay',
+    'animation-direction',
+    'animation-fill-mode',
+    'animation-iteration-count',
+    'animation-play-state',
+    'animation-timing-function',
+    'animation-timeline',
+    'transition',
+    'transition-property',
+    'transition-duration',
+    'transition-delay',
+    'transition-timing-function',
+    'transition-behavior',
+  ];
+  const hasMotionDeclaration = motionProperties.some((property) =>
+    hasCssDeclaration(blocks, property),
+  );
+  if (
+    hasMotionDeclaration &&
+    !hasMediaFeature(blocks, 'prefers-reduced-motion', 'reduce')
+  ) {
+    addIssue(
+      'reduced-motion-required',
+      'Animation and transition styles require a reduced-motion fallback.',
+    );
+  }
+
+  return {
+    ok: !issues.some(({ severity }) => severity === 'error'),
+    issues,
+  };
+};
+
+const parseArguments = (args) => {
+  const options = { json: false };
+
+  for (let index = 0; index < args.length; index += 1) {
+    const argument = args[index];
+
+    if (argument === '--json') {
+      options.json = true;
+      continue;
+    }
+
+    if (argument === '--file' || argument === '--page-type') {
+      const value = args[index + 1];
+      if (!value || value.startsWith('--')) {
+        throw new Error(`Missing value for ${argument}.`);
+      }
+      const key = argument === '--file' ? 'file' : 'pageType';
+      options[key] = value;
+      index += 1;
+      continue;
+    }
+
+    throw new Error(`Unknown argument: ${argument}`);
+  }
+
+  if (!options.file) {
+    throw new Error('Missing required --file argument.');
+  }
+
+  return options;
+};
+
+const main = async () => {
+  const options = parseArguments(process.argv.slice(2));
+  const html = await readFile(resolve(options.file), 'utf8');
+  const report = analyzeHtml(html, { pageType: options.pageType });
+
+  if (options.json) {
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+  } else if (report.issues.length === 0) {
+    process.stdout.write('UI Standard static validation passed\n');
+  } else {
+    for (const issue of report.issues) {
+      process.stdout.write(`[${issue.severity}] ${issue.code}: ${issue.message}\n`);
+    }
+  }
+
+  process.exitCode = report.ok ? 0 : 1;
+};
+
+const isDirectRun =
+  process.argv[1] &&
+  resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url));
+
+if (isDirectRun) {
+  main().catch((error) => {
+    process.stderr.write(`UI Standard validator error: ${error.message}\n`);
+    process.exitCode = 1;
+  });
+}
