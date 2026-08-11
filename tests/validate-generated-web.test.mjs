@@ -172,6 +172,38 @@ test('仅有 media 名称但没有实体回退和 filter none 不能通过', () 
   assert.ok(issueCodes(report).includes('liquid-glass-fallback-required'));
 });
 
+test('liquid glass 降低透明度回退可以继承外层卡片边框', () => {
+  const report = analyzeHtml(`
+    <html
+      data-ui-page-type="marketing"
+      data-ui-hero="none"
+      data-ui-card-material="liquid-glass"
+    >
+      <style>
+        :root {
+          color-scheme: dark;
+          --radius-card: 36px;
+        }
+        :root[data-ui-card-material="liquid-glass"] [data-ui-card] {
+          border: 1px solid var(--card-border);
+          border-radius: var(--radius-card);
+          corner-shape: squircle;
+          backdrop-filter: blur(20px);
+        }
+        @media (prefers-reduced-transparency: reduce) {
+          :root[data-ui-card-material="liquid-glass"] [data-ui-card] {
+            background: var(--card-solid-bg);
+            backdrop-filter: none;
+          }
+        }
+      </style>
+      <article data-ui-card>Card</article>
+    </html>
+  `);
+
+  assert.ok(!issueCodes(report).includes('liquid-glass-fallback-required'));
+});
+
 test('官方 theme.css liquid glass 结构通过材质校验', async () => {
   const themeCss = await readFile(new URL('../theme.css', import.meta.url), 'utf8');
   const report = analyzeHtml(`
@@ -223,6 +255,56 @@ test('卡片检测忽略 script 和 style 中的伪标签字符串', () => {
   assert.ok(!issueCodes(report).includes('nested-card'));
 });
 
+test('空值和布尔 data-ui-product-state 不能作为 Hero 证据', () => {
+  for (const productState of [
+    'data-ui-product-state',
+    'data-ui-product-state=""',
+  ]) {
+    const report = analyzeHtml(`
+      <html data-ui-page-type="marketing" data-ui-hero="approved">
+        <style>:root { color-scheme: dark; }</style>
+        <div ${productState}></div>
+      </html>
+    `);
+
+    assert.ok(
+      issueCodes(report).includes('hero-evidence-required'),
+      `${productState} must not count as Hero evidence`,
+    );
+  }
+});
+
+test('默认视觉边界不能只由条件规则满足', () => {
+  const report = analyzeHtml(`
+    <html
+      data-ui-page-type="marketing"
+      data-ui-hero="none"
+      data-ui-card-material="solid"
+    >
+      <style>
+        :root {
+          color-scheme: light;
+          --radius-card: 12px;
+        }
+        [data-ui-card] {
+          border-radius: var(--radius-card);
+          corner-shape: squircle;
+        }
+        @media (prefers-color-scheme: dark) {
+          :root {
+            color-scheme: dark;
+            --radius-card: 36px;
+          }
+        }
+      </style>
+      <article data-ui-card>Card</article>
+    </html>
+  `);
+
+  assert.ok(issueCodes(report).includes('dark-theme-required'));
+  assert.ok(issueCodes(report).includes('card-radius-too-small'));
+});
+
 test('真实元素 inline style 的硬编码品牌色会被报告', () => {
   const report = analyzeHtml(`
     <html data-ui-page-type="marketing" data-ui-hero="none">
@@ -232,6 +314,17 @@ test('真实元素 inline style 的硬编码品牌色会被报告', () => {
   `);
 
   assert.ok(issueCodes(report).includes('brand-color-hardcoded'));
+});
+
+test('inline style 自定义属性中的品牌色不算硬编码使用', () => {
+  const report = analyzeHtml(`
+    <html data-ui-page-type="marketing" data-ui-hero="none">
+      <style>:root { color-scheme: dark; }</style>
+      <div style="--brand-accent:#9a6aba;color:var(--brand-accent)">Brand</div>
+    </html>
+  `);
+
+  assert.ok(!issueCodes(report).includes('brand-color-hardcoded'));
 });
 
 test('CLI 对无效页面返回 exit 1 和 JSON', () => {
@@ -288,4 +381,20 @@ test('CLI 参数错误使用中文错误信息和前缀', () => {
     assert.equal(result.status, 1);
     assert.match(result.stderr, message);
   }
+});
+
+test('CLI 文件读取失败输出中文信息且不泄露 ENOENT', () => {
+  const result = spawnSync(
+    process.execPath,
+    [
+      validatorPath,
+      '--file',
+      fileURLToPath(fixtureUrl('does-not-exist.html')),
+    ],
+    { encoding: 'utf8' },
+  );
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /UI Standard 校验器错误：无法读取文件/);
+  assert.doesNotMatch(result.stderr, /ENOENT|no such file or directory/i);
 });

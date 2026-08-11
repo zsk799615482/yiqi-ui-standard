@@ -205,7 +205,10 @@ const findClosingBrace = (source, openingBrace) => {
   return -1;
 };
 
-const collectCssBlocks = (source) => {
+const CONDITIONAL_AT_RULE =
+  /^@(container|document|media|starting-style|supports)\b/i;
+
+const collectCssBlocks = (source, parentIsConditional = false) => {
   const blocks = [];
   let cursor = 0;
 
@@ -226,10 +229,15 @@ const collectCssBlocks = (source) => {
     );
     const prelude = source.slice(preludeBoundary + 1, openingBrace).trim();
     const body = source.slice(openingBrace + 1, closingBrace);
-    blocks.push({ prelude, body });
+    blocks.push({ prelude, body, isConditional: parentIsConditional });
 
     if (prelude.startsWith('@')) {
-      blocks.push(...collectCssBlocks(body));
+      blocks.push(
+        ...collectCssBlocks(
+          body,
+          parentIsConditional || CONDITIONAL_AT_RULE.test(prelude),
+        ),
+      );
     }
 
     cursor = closingBrace + 1;
@@ -254,6 +262,9 @@ const cssDeclarationValues = (body, property) => {
   return values;
 };
 
+const stripCustomPropertyDeclarations = (source) =>
+  source.replace(/--[\w-]+\s*:[^;{}]*(?:;|(?=\})|$)/g, '');
+
 const largestPxValue = (source) => {
   const values = [...source.matchAll(/(-?\d*\.?\d+)\s*px\b/gi)].map(
     (match) => Number(match[1]),
@@ -274,7 +285,7 @@ const hasHeroEvidence = (elements) =>
     ({ name, attributes }) =>
       (['img', 'video', 'canvas'].includes(name) &&
         attributes.has('data-ui-hero-media')) ||
-      attributes.has('data-ui-product-state'),
+      (attributes.get('data-ui-product-state') ?? '').trim().length > 0,
   );
 
 const hasSaasHero = (elements) =>
@@ -293,11 +304,13 @@ const hasInteractiveElement = (elements) =>
   );
 
 const rootBlocks = (blocks) =>
-  blocks.filter(({ prelude }) =>
-    prelude
-      .split(',')
-      .map((selector) => selector.trim())
-      .includes(':root'),
+  blocks.filter(
+    ({ prelude, isConditional }) =>
+      !isConditional &&
+      prelude
+        .split(',')
+        .map((selector) => selector.trim())
+        .includes(':root'),
   );
 
 const rootDeclarationValues = (blocks, property) =>
@@ -355,21 +368,9 @@ const hasLiquidGlassFallback = (blocks) =>
             selectorTargetsLiquidRoot(prelude)),
       );
       const hasEntityFallback = relevantBlocks.some(
-        ({ body: fallbackBody }) => {
-          const hasBackground =
-            cssDeclarationValues(fallbackBody, 'background').length > 0;
-          const hasBorder =
-            cssDeclarationValues(fallbackBody, 'border').length > 0;
-          const hasBackgroundToken =
-            cssDeclarationValues(fallbackBody, '--card-background').length > 0;
-          const hasBorderToken =
-            cssDeclarationValues(fallbackBody, '--card-border').length > 0;
-
-          return (
-            (hasBackground && hasBorder) ||
-            (hasBackgroundToken && hasBorderToken)
-          );
-        },
+        ({ body: fallbackBody }) =>
+          cssDeclarationValues(fallbackBody, 'background').length > 0 ||
+          cssDeclarationValues(fallbackBody, '--card-background').length > 0,
       );
       const disablesBackdrop = relevantBlocks.some(
         ({ prelude, body: fallbackBody }) =>
@@ -472,11 +473,13 @@ export const analyzeHtml = (html, options = {}) => {
     );
   }
 
-  const declaresDarkColorScheme = blocks.some(({ prelude, body }) =>
-    !prelude.startsWith('@') &&
-    cssDeclarationValues(body, 'color-scheme').some((value) =>
-      /\bdark\b/i.test(value),
-    ),
+  const declaresDarkColorScheme = blocks.some(
+    ({ prelude, body, isConditional }) =>
+      !isConditional &&
+      !prelude.startsWith('@') &&
+      cssDeclarationValues(body, 'color-scheme').some((value) =>
+        /\bdark\b/i.test(value),
+      ),
   );
   if (!declaresDarkColorScheme) {
     addIssue(
@@ -577,12 +580,12 @@ export const analyzeHtml = (html, options = {}) => {
     );
   }
 
-  const cssWithoutCustomProperties = styleSource.replace(
-    /--[\w-]+\s*:[^;{}]*(?:;|(?=\}))/g,
-    '',
-  );
+  const cssWithoutCustomProperties =
+    stripCustomPropertyDeclarations(styleSource);
   const hasInlineBrandColor = elements.some(({ attributes }) =>
-    /#9a6aba\b/i.test(attributes.get('style') ?? ''),
+    /#9a6aba\b/i.test(
+      stripCustomPropertyDeclarations(attributes.get('style') ?? ''),
+    ),
   );
   if (
     /#9a6aba\b/i.test(cssWithoutCustomProperties) ||
@@ -677,7 +680,16 @@ const parseArguments = (args) => {
 
 const main = async () => {
   const options = parseArguments(process.argv.slice(2));
-  const html = await readFile(resolve(options.file), 'utf8');
+  const filePath = resolve(options.file);
+  let html;
+
+  try {
+    html = await readFile(filePath, 'utf8');
+  } catch {
+    throw new Error(
+      `无法读取文件：${filePath}。请确认文件路径存在且具有读取权限。`,
+    );
+  }
   const report = analyzeHtml(html, { pageType: options.pageType });
 
   if (options.json) {
