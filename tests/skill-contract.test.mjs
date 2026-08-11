@@ -48,6 +48,19 @@ test('product profiles support composite products and page overrides', async () 
   assert.match(skill, /当前页面或路由的页面级类型/);
   assert.match(skill, /复合产品不得强行归为单一类型/);
   assert.match(skill, /布局和密度按页面主要任务校准/);
+  assert.ok(
+    skill.indexOf('第 1 步：项目阶段') <
+      skill.indexOf('第 2 步：产品画像'),
+    'project stage selection must precede product profiling',
+  );
+  assert.match(
+    skill,
+    /规划与需求阶段按 `references\/planning-workflow\.md` 的访谈顺序，在目标用户和主要任务之后确认产品画像/,
+  );
+  assert.match(
+    skill,
+    /代码实现和已有页面审查或改进阶段，在进入对应工作前确认产品画像/,
+  );
 
   assert.match(archetypes, /1 个主类型/);
   assert.match(archetypes, /0–3 个次类型/);
@@ -68,6 +81,10 @@ test('product profiles support composite products and page overrides', async () 
   assert.match(archetypes, /操作风险：普通、敏感、不可逆/);
   assert.match(archetypes, /Hero \/ No Hero/);
   assert.match(archetypes, /approved layout/);
+  assert.match(
+    archetypes,
+    /approved layout（已批准布局方向）[\s\S]*当前页面对应的 Hero、SaaS 或其他产品规范[\s\S]*经用户批准的结构方向[\s\S]*不是固定全局模板/,
+  );
 
   assert.match(
     archetypes,
