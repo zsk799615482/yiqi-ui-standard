@@ -30,4 +30,9 @@ test('planning mode has a dedicated approval-gated workflow', async () => {
   assert.match(planning, /完整 UI 需求规范/);
   assert.match(planning, /2–3 个布局方向/);
   assert.match(planning, /用户批准[\s\S]*前[\s\S]*不进入代码实现/);
+  assert.match(planning, /不生成面向产品交付或运行的生产实现代码/);
+  assert.match(planning, /允许创建隔离的临时浏览器决策稿/);
+  assert.match(planning, /临时稿不得进入产品源码/);
+  assert.match(planning, /临时稿不得绑定技术栈/);
+  assert.match(planning, /用户批准后应丢弃或重新实现/);
 });
