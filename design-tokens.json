@@ -1,9 +1,24 @@
 {
   "meta": {
     "name": "OneSeven Design Tokens",
-    "version": "1.1.0",
+    "version": "2.0.0",
     "brand": "17 RESEARCH INSTITUTE",
-    "principle": "Shared brand foundations with product-level density and component decisions"
+    "principle": "Dark-first shared visual boundaries with product-calibrated layout and density"
+  },
+  "theme": {
+    "default": "dark",
+    "lightGeneratedOnlyWhenRequested": true
+  },
+  "darkColors": {
+    "page": "#09090B",
+    "surface": "#141418",
+    "elevated": "#1B1B20",
+    "subtle": "#222228",
+    "border": "#2E2E35",
+    "borderStrong": "#44444D",
+    "textPrimary": "#F5F5F7",
+    "textSecondary": "#B8B8C0",
+    "textTertiary": "#81818A"
   },
   "colors": {
     "primary": {
@@ -36,47 +51,48 @@
   },
   "semanticColors": {
     "text": {
-      "primary": "{colors.neutral.900}",
-      "secondary": "{colors.neutral.700}",
-      "tertiary": "{colors.neutral.400}",
-      "inverse": "{colors.common.white}",
-      "brand": "{colors.primary.700}",
-      "success": "{colors.success.700}",
-      "danger": "{colors.danger.700}"
+      "primary": "{darkColors.textPrimary}",
+      "secondary": "{darkColors.textSecondary}",
+      "tertiary": "{darkColors.textTertiary}",
+      "inverse": "{darkColors.page}",
+      "brand": "{colors.primary.500}",
+      "success": "#72B596",
+      "danger": "#DF7B89"
     },
     "background": {
-      "page": "{colors.neutral.50}",
-      "surface": "{colors.common.white}",
-      "subtle": "{colors.neutral.100}",
-      "selected": "{colors.primary.100}",
-      "success": "{colors.success.100}",
-      "danger": "{colors.danger.100}"
+      "page": "{darkColors.page}",
+      "surface": "{darkColors.surface}",
+      "elevated": "{darkColors.elevated}",
+      "subtle": "{darkColors.subtle}",
+      "selected": "rgba(154, 106, 186, 0.16)",
+      "success": "rgba(114, 181, 150, 0.16)",
+      "danger": "rgba(223, 123, 137, 0.16)"
     },
     "border": {
-      "default": "{colors.neutral.200}",
-      "strong": "{colors.neutral.400}",
-      "focus": "{colors.primary.700}",
-      "focusRing": "rgba(154, 106, 186, 0.15)",
-      "success": "{colors.success.500}",
-      "danger": "{colors.danger.500}"
+      "default": "{darkColors.border}",
+      "strong": "{darkColors.borderStrong}",
+      "focus": "{colors.primary.500}",
+      "focusRing": "rgba(154, 106, 186, 0.28)",
+      "success": "#72B596",
+      "danger": "#DF7B89"
     },
     "status": {
       "info": {
-        "background": "{colors.primary.100}",
-        "foreground": "{colors.primary.700}"
+        "background": "rgba(154, 106, 186, 0.16)",
+        "foreground": "{colors.primary.500}"
       },
       "warning": {
-        "background": "{colors.neutral.100}",
-        "foreground": "{colors.neutral.900}",
-        "icon": "{colors.primary.700}"
+        "background": "{darkColors.subtle}",
+        "foreground": "{darkColors.textPrimary}",
+        "icon": "{colors.primary.500}"
       },
       "success": {
-        "background": "{colors.success.100}",
-        "foreground": "{colors.success.700}"
+        "background": "rgba(114, 181, 150, 0.16)",
+        "foreground": "#72B596"
       },
       "danger": {
-        "background": "{colors.danger.100}",
-        "foreground": "{colors.danger.700}"
+        "background": "rgba(223, 123, 137, 0.16)",
+        "foreground": "#DF7B89"
       }
     }
   },
@@ -159,6 +175,60 @@
       "3xl": "36px",
       "4xl": "40px",
       "5xl": "52px"
+    },
+    "roles": {
+      "marketingH1": {
+        "desktop": {
+          "min": "36px",
+          "max": "42px"
+        },
+        "mobile": {
+          "min": "30px",
+          "max": "36px"
+        }
+      },
+      "pageTitle": {
+        "desktop": {
+          "min": "28px",
+          "max": "32px"
+        },
+        "mobile": {
+          "min": "24px",
+          "max": "28px"
+        }
+      },
+      "sectionTitle": {
+        "desktop": {
+          "min": "22px",
+          "max": "24px"
+        },
+        "mobile": {
+          "min": "20px",
+          "max": "22px"
+        }
+      },
+      "cardTitle": {
+        "desktop": {
+          "min": "16px",
+          "max": "20px"
+        },
+        "mobile": {
+          "min": "16px",
+          "max": "18px"
+        }
+      },
+      "saasPageTitle": {
+        "min": "20px",
+        "max": "24px"
+      },
+      "saasPanelTitle": {
+        "min": "16px",
+        "max": "18px"
+      },
+      "saasBody": {
+        "min": "13px",
+        "max": "16px"
+      }
     }
   },
   "spacing": {
@@ -205,7 +275,28 @@
     "md": "8px",
     "lg": "12px",
     "xl": "16px",
+    "card": "36px",
     "full": "9999px"
+  },
+  "cardMaterials": {
+    "defaultQuestionRequired": true,
+    "solid": {
+      "background": "{darkColors.surface}",
+      "border": "1px solid {darkColors.border}",
+      "shadow": "0 18px 48px rgba(0, 0, 0, 0.28)"
+    },
+    "liquidGlass": {
+      "background": "rgba(27, 27, 32, 0.62)",
+      "border": "1px solid rgba(245, 245, 247, 0.14)",
+      "backdropBlur": "24px",
+      "backdropSaturation": "140%",
+      "shadow": "0 18px 48px rgba(0, 0, 0, 0.32)",
+      "reducedTransparencyFallback": {
+        "background": "{darkColors.surface}",
+        "border": "1px solid {darkColors.border}",
+        "backdropFilter": "none"
+      }
+    }
   },
   "shadow": {
     "none": "none",

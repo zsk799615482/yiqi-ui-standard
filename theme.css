@@ -31,7 +31,7 @@
 }
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 
   /* Brand and semantic colors */
   --color-primary-100: #f3ecf7;
@@ -44,6 +44,17 @@
   --color-danger-500: #b94a5a;
   --color-danger-700: #7d303b;
 
+  /* Dark-first neutral foundation */
+  --color-dark-page: #09090b;
+  --color-dark-surface: #141418;
+  --color-dark-elevated: #1b1b20;
+  --color-dark-subtle: #222228;
+  --color-dark-border: #2e2e35;
+  --color-dark-border-strong: #44444d;
+  --color-dark-text-primary: #f5f5f7;
+  --color-dark-text-secondary: #b8b8c0;
+  --color-dark-text-tertiary: #81818a;
+
   /* Natural neutrals */
   --color-neutral-50: #fafafa;
   --color-neutral-100: #f5f5f5;
@@ -53,32 +64,40 @@
   --color-neutral-900: #171717;
 
   /* Semantic aliases */
-  --color-primary: var(--color-primary-700);
-  --color-success: var(--color-success-700);
-  --color-danger: var(--color-danger-700);
-  --color-text-primary: var(--color-neutral-900);
-  --color-text-secondary: var(--color-neutral-700);
-  --color-text-tertiary: var(--color-neutral-400);
-  --color-text-inverse: #ffffff;
-  --color-bg-page: var(--color-neutral-50);
-  --color-bg-surface: #ffffff;
-  --color-bg-subtle: var(--color-neutral-100);
-  --color-bg-selected: var(--color-primary-100);
-  --color-border-default: var(--color-neutral-200);
-  --color-border-strong: var(--color-neutral-400);
-  --color-border-focus: var(--color-primary-700);
-  --color-focus-ring: rgba(154, 106, 186, 0.15);
+  --color-primary: var(--color-primary-500);
+  --color-success: #72b596;
+  --color-danger: #df7b89;
+  --color-text-primary: var(--color-dark-text-primary);
+  --color-text-secondary: var(--color-dark-text-secondary);
+  --color-text-tertiary: var(--color-dark-text-tertiary);
+  --color-text-inverse: var(--color-dark-page);
+  --color-text-brand: var(--color-primary-500);
+  --color-text-success: #72b596;
+  --color-text-danger: #df7b89;
+  --color-bg-page: var(--color-dark-page);
+  --color-bg-surface: var(--color-dark-surface);
+  --color-bg-elevated: var(--color-dark-elevated);
+  --color-bg-subtle: var(--color-dark-subtle);
+  --color-bg-selected: rgba(154, 106, 186, 0.16);
+  --color-bg-success: rgba(114, 181, 150, 0.16);
+  --color-bg-danger: rgba(223, 123, 137, 0.16);
+  --color-border-default: var(--color-dark-border);
+  --color-border-strong: var(--color-dark-border-strong);
+  --color-border-focus: var(--color-primary-500);
+  --color-border-success: #72b596;
+  --color-border-danger: #df7b89;
+  --color-focus-ring: rgba(154, 106, 186, 0.28);
 
   /* Status aliases. Warning intentionally adds no new chromatic color. */
-  --color-info-bg: var(--color-primary-100);
-  --color-info-text: var(--color-primary-700);
-  --color-warning-bg: var(--color-neutral-100);
-  --color-warning-text: var(--color-neutral-900);
-  --color-warning-icon: var(--color-primary-700);
-  --color-success-bg: var(--color-success-100);
-  --color-success-text: var(--color-success-700);
-  --color-danger-bg: var(--color-danger-100);
-  --color-danger-text: var(--color-danger-700);
+  --color-info-bg: rgba(154, 106, 186, 0.16);
+  --color-info-text: var(--color-primary-500);
+  --color-warning-bg: var(--color-dark-subtle);
+  --color-warning-text: var(--color-dark-text-primary);
+  --color-warning-icon: var(--color-primary-500);
+  --color-success-bg: var(--color-bg-success);
+  --color-success-text: var(--color-text-success);
+  --color-danger-bg: var(--color-bg-danger);
+  --color-danger-text: var(--color-text-danger);
 
   /* Typography */
   --font-sans: "Alibaba PuHuiTi", -apple-system, BlinkMacSystemFont,
@@ -98,6 +117,28 @@
   --text-3xl: 30px;
   --text-4xl: 36px;
   --text-5xl: 48px;
+  --type-marketing-h1-desktop-min: 36px;
+  --type-marketing-h1-desktop-max: 42px;
+  --type-marketing-h1-mobile-min: 30px;
+  --type-marketing-h1-mobile-max: 36px;
+  --type-page-title-desktop-min: 28px;
+  --type-page-title-desktop-max: 32px;
+  --type-page-title-mobile-min: 24px;
+  --type-page-title-mobile-max: 28px;
+  --type-section-title-desktop-min: 22px;
+  --type-section-title-desktop-max: 24px;
+  --type-section-title-mobile-min: 20px;
+  --type-section-title-mobile-max: 22px;
+  --type-card-title-desktop-min: 16px;
+  --type-card-title-desktop-max: 20px;
+  --type-card-title-mobile-min: 16px;
+  --type-card-title-mobile-max: 18px;
+  --type-saas-page-title-min: 20px;
+  --type-saas-page-title-max: 24px;
+  --type-saas-panel-title-min: 16px;
+  --type-saas-panel-title-max: 18px;
+  --type-saas-body-min: 13px;
+  --type-saas-body-max: 16px;
 
   /* Spacing */
   --spacing-0: 0;
@@ -137,11 +178,23 @@
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-xl: 16px;
+  --radius-card: 36px;
   --radius-full: 9999px;
   --shadow-none: none;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12);
+  --card-solid-background: var(--color-bg-surface);
+  --card-solid-border: 1px solid var(--color-border-default);
+  --card-solid-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+  --card-glass-background: rgba(27, 27, 32, 0.62);
+  --card-glass-border: 1px solid rgba(245, 245, 247, 0.14);
+  --card-glass-blur: 24px;
+  --card-glass-saturation: 140%;
+  --card-glass-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+  --card-background: var(--card-solid-background);
+  --card-border: var(--card-solid-border);
+  --card-shadow: var(--card-solid-shadow);
 
   /* Soft, calm motion */
   --duration-fast: 200ms;
@@ -166,6 +219,44 @@
   --z-modal: 1300;
   --z-popover: 1400;
   --z-toast: 1500;
+}
+
+:root[data-card-material="solid"] {
+  --card-background: var(--card-solid-background);
+  --card-border: var(--card-solid-border);
+  --card-shadow: var(--card-solid-shadow);
+}
+
+:root[data-card-material="liquid-glass"] {
+  --card-background: var(--card-glass-background);
+  --card-border: var(--card-glass-border);
+  --card-shadow: var(--card-glass-shadow);
+}
+
+[data-ui-card] {
+  background: var(--card-background);
+  border: var(--card-border);
+  border-radius: var(--radius-card);
+  corner-shape: squircle;
+  box-shadow: var(--card-shadow);
+}
+
+:root[data-card-material="liquid-glass"] [data-ui-card] {
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  backdrop-filter: blur(24px) saturate(140%);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root[data-card-material="liquid-glass"] {
+    --card-background: var(--card-solid-background);
+    --card-border: var(--card-solid-border);
+    --card-shadow: var(--card-solid-shadow);
+  }
+
+  :root[data-card-material="liquid-glass"] [data-ui-card] {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -21,6 +21,19 @@ const markdownSection = (markdown, heading) => {
   );
 };
 
+const markdownSubsection = (markdown, heading) => {
+  const marker = `### ${heading}`;
+  const start = markdown.indexOf(marker);
+  assert.notEqual(start, -1, `missing markdown subsection: ${heading}`);
+
+  const contentStart = start + marker.length;
+  const nextSubsection = markdown.indexOf('\n### ', contentStart);
+  return markdown.slice(
+    contentStart,
+    nextSubsection === -1 ? markdown.length : nextSubsection,
+  );
+};
+
 const assertMarkdownListItems = (section, items, label) => {
   for (const item of items) {
     assert.match(
@@ -395,4 +408,124 @@ test('SaaS reference includes all approved workbench shells', async () => {
     analyticsRules,
     'analytics workbench rule',
   );
+});
+
+test('v2 tokens are dark-first and include role typography', async () => {
+  const tokens = JSON.parse(await read('design-tokens.json'));
+
+  assert.equal(tokens.meta.version, '2.0.0');
+  assert.equal(tokens.theme.default, 'dark');
+  assert.equal(tokens.theme.lightGeneratedOnlyWhenRequested, true);
+  assert.equal(tokens.semanticColors.background.page, '{darkColors.page}');
+
+  assert.deepEqual(tokens.typography.roles.marketingH1, {
+    desktop: { min: '36px', max: '42px' },
+    mobile: { min: '30px', max: '36px' },
+  });
+  assert.deepEqual(tokens.typography.roles.pageTitle, {
+    desktop: { min: '28px', max: '32px' },
+    mobile: { min: '24px', max: '28px' },
+  });
+  assert.deepEqual(tokens.typography.roles.sectionTitle, {
+    desktop: { min: '22px', max: '24px' },
+    mobile: { min: '20px', max: '22px' },
+  });
+  assert.deepEqual(tokens.typography.roles.cardTitle, {
+    desktop: { min: '16px', max: '20px' },
+    mobile: { min: '16px', max: '18px' },
+  });
+  assert.deepEqual(tokens.typography.roles.saasPageTitle, {
+    min: '20px',
+    max: '24px',
+  });
+  assert.deepEqual(tokens.typography.roles.saasPanelTitle, {
+    min: '16px',
+    max: '18px',
+  });
+  assert.deepEqual(tokens.typography.roles.saasBody, {
+    min: '13px',
+    max: '16px',
+  });
+});
+
+test('cards use one continuous large-radius token and two materials', async () => {
+  const tokens = JSON.parse(await read('design-tokens.json'));
+  const theme = await read('theme.css');
+
+  assert.equal(tokens.borderRadius.card, '36px');
+  assert.equal(tokens.cardMaterials.defaultQuestionRequired, true);
+  assert.ok(tokens.cardMaterials.solid);
+  assert.ok(tokens.cardMaterials.liquidGlass);
+  assert.ok(tokens.cardMaterials.liquidGlass.reducedTransparencyFallback);
+
+  assert.match(theme, /color-scheme:\s*dark/);
+  assert.match(theme, /--radius-card:\s*36px/);
+  assert.match(
+    theme,
+    /\[data-ui-card\]\s*\{[\s\S]*border-radius:\s*var\(--radius-card\)[\s\S]*corner-shape:\s*squircle/,
+  );
+  assert.match(theme, /:root\[data-card-material="solid"\]/);
+  assert.match(theme, /:root\[data-card-material="liquid-glass"\]/);
+  assert.match(theme, /backdrop-filter:\s*blur\([^)]*\)\s+saturate\([^)]*\)/);
+  assert.match(theme, /@media\s*\(prefers-reduced-transparency:\s*reduce\)/);
+});
+
+test('SKILL treats v2 visual boundaries as mandatory', async () => {
+  const skill = await read('SKILL.md');
+
+  assert.match(skill, /3\. \*\*共享硬边界与产品校准\*\*/);
+  assert.match(
+    skill,
+    /默认暗色、排版角色范围和卡片连续大圆角是生成硬边界/,
+  );
+  assert.match(
+    skill,
+    /产品主类型、页面任务和信息密度决定布局、控件尺寸和局部密度/,
+  );
+  assert.match(
+    skill,
+    /不要求不同产品复制相同组件，但不得突破标题、Hero、卡片规则/,
+  );
+  assert.doesNotMatch(
+    skill,
+    /圆角、字号、断点和动效数值默认是建议/,
+  );
+});
+
+test('visual references document dark typography and card boundaries', async () => {
+  const visual = await read('references/visual-system.md');
+  const guidance = await read('references/oneseven-guidance.md');
+  const card = markdownSubsection(visual, '卡片（Card）');
+
+  for (const document of [visual, guidance]) {
+    assert.match(document, /默认暗色/);
+    assert.match(document, /36–42px/);
+    assert.match(document, /30–36px/);
+    assert.match(document, /28–32px/);
+    assert.match(document, /24–28px/);
+    assert.match(document, /22–24px/);
+    assert.match(document, /20–22px/);
+    assert.match(document, /16–20px/);
+    assert.match(document, /16–18px/);
+    assert.match(document, /20–24px/);
+    assert.match(document, /13–16px/);
+    assert.match(document, /36px/);
+    assert.match(document, /实体材质[\s\S]*液态玻璃|液态玻璃[\s\S]*实体材质/);
+    assert.match(document, /生成前必须询问/);
+    assert.match(document, /玻璃卡片不得嵌套|玻璃材质不得嵌套/);
+    assert.match(document, /减少透明[\s\S]*实体背景/);
+  }
+
+  assert.match(card, /16–24px/);
+  assert.match(card, /radius-card/);
+  assert.match(card, /36px/);
+  assert.match(card, /corner-shape:\s*squircle/);
+  assert.match(card, /标题[\s\S]*16–20px[\s\S]*16–18px/);
+  assert.match(card, /同一页面使用同一种卡片材质/);
+  assert.match(card, /不得嵌套/);
+  assert.match(card, /高密度[\s\S]*减少卡片数量[\s\S]*内边距/);
+  assert.match(card, /hover/);
+  assert.match(card, /focus-visible/);
+  assert.doesNotMatch(card, /12px/);
+  assert.doesNotMatch(card, /radius-lg/);
 });

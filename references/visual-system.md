@@ -1,6 +1,6 @@
 # OneSeven 视觉设计系统规范
 
-本文档定义壹柒研究所跨产品共享的品牌基础和可复用设计意图。Logo、品牌字体、品牌紫定位和语义一致性属于品牌级规则；布局密度、组件尺寸、圆角和信息结构由产品场景决定。
+本文档定义壹柒研究所跨产品共享的品牌基础和可复用设计意图。Logo、品牌字体、品牌紫定位、默认暗色、排版角色范围与卡片连续大圆角属于共享硬边界；布局密度、控件尺寸和信息结构由产品场景决定。
 
 ---
 
@@ -32,15 +32,28 @@ primary: {
 }
 ```
 
-### 语义色
+### 默认主题与语义色
+
+生成默认使用暗色主题；只有用户明确提出浅色主题时才生成浅色版本。暗色不是对浅色机械反转，而是 `design-tokens.json` 的默认语义映射。
+
+| 角色 | 数值 | 用途 |
+|------|------|------|
+| page | `#09090B` | 页面底色 |
+| surface | `#141418` | 实体卡片与基础表面 |
+| elevated | `#1B1B20` | 浮层和抬升表面 |
+| subtle | `#222228` | 次级背景、悬停和弱分区 |
+| border / border strong | `#2E2E35` / `#44444D` | 默认与强调边界 |
+| text primary | `#F5F5F7` | 标题和高强调文本 |
+| text secondary | `#B8B8C0` | 正文和说明 |
+| text tertiary | `#81818A` | 辅助文本和占位符 |
 
 只保留三组有彩色，避免状态色过多：
 
-| 语义 | 浅色背景 | 基准强调 | 深色文字/按钮 | 用途 |
-|------|---------|---------|---------------|------|
-| primary / info | `#F3ECF7` | `#9A6ABA` | `#68447F` | 品牌、信息、焦点、选中 |
-| success | `#E7F2EC` | `#327A5B` | `#21513D` | 成功、通过、完成 |
-| danger | `#F8E8EB` | `#B94A5A` | `#7D303B` | 错误、删除、不可逆操作 |
+| 语义 | 暗色强调 | 暗色低强调背景 | 用途 |
+|------|---------|---------------|------|
+| primary / info | `#9A6ABA` | `rgba(154, 106, 186, 0.16)` | 品牌、信息、焦点、选中 |
+| success | `#72B596` | `rgba(114, 181, 150, 0.16)` | 成功、通过、完成 |
+| danger | `#DF7B89` | `rgba(223, 123, 137, 0.16)` | 错误、删除、不可逆操作 |
 
 **警告状态不新增橙色：**
 
@@ -51,18 +64,7 @@ primary: {
 
 ### 中性色
 
-中性色承担页面、文字、边框、禁用和普通提示等主要视觉工作。
-
-```javascript
-neutral: {
-  50:  '#FAFAFA', // 页面背景
-  100: '#F5F5F5', // 次级背景、悬停背景
-  200: '#E5E5E5', // 边框、分隔线
-  400: '#A3A3A3', // 占位符、弱化信息
-  700: '#525252', // 正文、次要标题
-  900: '#171717', // 标题、高强调文字
-}
-```
+原有 `neutral-50` 至 `neutral-900` 色阶继续作为兼容和明确请求的浅色主题基础，但业务代码默认使用暗色语义别名，不直接把浅色中性色写入组件。
 
 ### 字体
 
@@ -126,19 +128,20 @@ color-danger-700
 
 | 别名 | 指向 | 用途 |
 |------|------|------|
-| `color-text-primary` | neutral-900 | 标题、重点文本 |
-| `color-text-secondary` | neutral-700 | 正文、说明文本 |
-| `color-text-tertiary` | neutral-400 | 辅助文本、占位符 |
-| `color-text-inverse` | white | 深色背景上的文本 |
-| `color-bg-page` | neutral-50 | 页面背景 |
-| `color-bg-surface` | white | 卡片、面板背景 |
-| `color-bg-hover` | neutral-100 | 悬停背景 |
-| `color-bg-active` | primary-100 | 选中、按下背景 |
-| `color-border-default` | neutral-200 | 默认边框 |
-| `color-border-strong` | neutral-400 | 强调边框 |
-| `color-border-focus` | primary-700 | 焦点边框 |
+| `color-text-primary` | dark text primary | 标题、重点文本 |
+| `color-text-secondary` | dark text secondary | 正文、说明文本 |
+| `color-text-tertiary` | dark text tertiary | 辅助文本、占位符 |
+| `color-text-inverse` | dark page | 浅色实心元素上的文本 |
+| `color-bg-page` | dark page | 页面背景 |
+| `color-bg-surface` | dark surface | 实体卡片、面板背景 |
+| `color-bg-elevated` | dark elevated | 浮层和抬升区域 |
+| `color-bg-subtle` | dark subtle | 悬停、弱分区背景 |
+| `color-bg-selected` | primary / 16% | 选中、按下背景 |
+| `color-border-default` | dark border | 默认边框 |
+| `color-border-strong` | dark border strong | 强调边框 |
+| `color-border-focus` | primary-500 | 焦点边框 |
 
-使用别名的好处：切换暗色模式时只需重新映射别名，业务代码无需改动。
+业务代码始终使用语义别名。浅色主题只有用户明确要求时才重新映射，不能成为生成默认值。
 
 ### 间距 Tokens
 
@@ -177,19 +180,32 @@ color-danger-700
 
 Profile 是产品级起点，不是跨产品硬性尺寸。移动端触控目标应保证足够点击区域，可通过外层 hit area 补足。
 
-### 字号 Tokens
+### 排版角色范围
 
-| Token | 字号 | 行高 | 字重 | 典型用途 |
-|-------|------|------|------|---------|
-| `text-xs` | 12px | 16px | 400 | 辅助信息、时间戳、角标 |
-| `text-sm` | 14px | 20px | 400 | 正文、按钮文字、表单标签 |
-| `text-base` | 16px | 24px | 400 | **标准正文** |
-| `text-lg` | 18px | 28px | 500 | 小标题、强调文本 |
-| `text-xl` | 20px | 28px | 600 | 卡片标题 |
-| `text-2xl` | 24px | 32px | 600 | 页面副标题 |
-| `text-3xl` | 30px | 36px | 700 | 页面标题 |
-| `text-4xl` | 36px | 40px | 700 | 大标题 |
-| `text-5xl` | 48px | 52px | 700 | 营销页大标题 |
+基础字号 token 可用于正文和控件，但标题生成必须按角色选择，不得用视口宽度无限放大。
+
+| 角色 | 桌面范围 | 移动范围 | 用途 |
+|------|---------|---------|------|
+| Marketing H1 | 36–42px | 30–36px | 品牌官网、产品介绍和发布页面的唯一主标题 |
+| Page Title | 28–32px | 24–28px | 非 SaaS 页面主要标题 |
+| Section Title | 22–24px | 20–22px | 页面区块标题 |
+| Card Title | 16–20px | 16–18px | 独立卡片标题 |
+
+SaaS 与持续工作界面采用更紧凑的角色范围：
+
+| 角色 | 范围 |
+|------|------|
+| SaaS Page Title | 20–24px |
+| SaaS Panel Title | 16–18px |
+| SaaS Body / Controls | 13–16px |
+
+**标题边界：**
+
+- H1 只承载品牌、产品名或明确服务类别；同一视口不连续重复多个 H1
+- H1 不使用超出 42px 的无限放大，也不通过超大留白伪造层级
+- `200` 字重仅用于足够大的品牌展示文字；正文、控件和小标题不得使用 `200`
+- 标题字号必须与容器尺度匹配，长标题先换行，再在角色范围内校准，不能溢出或遮挡其他内容
+- Hero 标题遵守 Marketing H1 范围；No Hero 与工作台使用 Page Title 或 SaaS Page Title 范围
 
 **行高规则：**
 - 正文（12-18px）：行高约为字号的 1.4-1.5 倍，保证可读性
@@ -206,17 +222,19 @@ Profile 是产品级起点，不是跨产品硬性尺寸。移动端触控目标
 
 ### 圆角 Tokens
 
+控件圆角与卡片圆角分离：
+
 | Token | 数值 | 典型用途 |
 |-------|------|---------|
 | `radius-none` | 0 | 表格、贯穿式分隔区块 |
 | `radius-sm` | 4px | 标签、徽章、小输入框 |
-| `radius-md` | 8px | **按钮、输入框、小卡片（最常用）** |
-| `radius-lg` | 12px | 卡片、面板 |
-| `radius-xl` | 16px | 大卡片、模态框 |
-| `radius-2xl` | 24px | 特殊容器、营销卡片 |
+| `radius-md` | 8px | 按钮、输入框和紧凑控件 |
+| `radius-lg` | 12px | 大控件、菜单和非卡片容器 |
+| `radius-xl` | 16px | Modal、抽屉等容器级元素 |
+| `radius-card` | 36px | 所有独立卡片，配合连续曲率 |
 | `radius-full` | 9999px | 头像、胶囊按钮、开关 |
 
-**一致性规则：** 圆角由产品局部系统选择。同一产品中的同类组件应使用相同圆角，嵌套元素的内外圆角关系应稳定。
+卡片固定使用 `radius-card: 36px` 与 `corner-shape: squircle`。移动端空间不足时可以适度降低实际半径，但必须保持连续曲率和同一产品的卡片语言；不能建立 4–24px 的第二套卡片圆角。按钮、输入框、筛选器、标签和 Modal 继续使用控件或容器级圆角，不得被称为卡片。
 
 ### 阴影 Tokens
 
@@ -282,11 +300,11 @@ Profile 是产品级起点，不是跨产品硬性尺寸。移动端触控目标
 
 | 变体 | 背景 | 文字 | 边框 | 用途 |
 |------|------|------|------|------|
-| primary | primary-700 | white | none | 当前任务的主操作 |
-| secondary | white | neutral-700 | neutral-200 | 次要操作 |
-| tertiary | transparent | neutral-700 | none | 弱化操作、图标按钮 |
-| danger | danger-700 | white | none | 删除等破坏性操作 |
-| ghost | transparent | primary-700 | none | 链接式按钮 |
+| primary | color-primary（primary-500） | color-text-primary | none | 当前任务的主操作 |
+| secondary | color-bg-surface | color-text-secondary | color-border-default | 次要操作 |
+| tertiary | transparent | color-text-secondary | none | 弱化操作、图标按钮 |
+| danger | color-danger | color-text-primary | none | 删除等破坏性操作 |
+| ghost | transparent | color-primary | none | 链接式按钮 |
 
 **状态定义（必须全部实现）：**
 
@@ -295,7 +313,7 @@ Profile 是产品级起点，不是跨产品硬性尺寸。移动端触控目标
 | default | 基准样式 |
 | hover | 基准色与深色之间做轻微明度变化，可选 `translateY(-1px)` |
 | active | `scale(0.98)`，背景再加深一档 |
-| focus-visible | `outline: 2px solid primary-700; outline-offset: 2px` |
+| focus-visible | `outline: 2px solid color-border-focus; outline-offset: 2px` |
 | disabled | `opacity: 0.5; cursor: not-allowed; pointer-events: none` |
 | loading | 显示 spinner，文字改为进行时（如"提交中..."），禁用交互 |
 
@@ -314,19 +332,19 @@ Profile 是产品级起点，不是跨产品硬性尺寸。移动端触控目标
 | 字号 | text-sm（14px）或 text-base（16px） |
 | 圆角 | radius-md（8px） |
 | 边框 | 1px solid `color-border-default` |
-| 背景 | `color-bg-surface`（白） |
+| 背景 | `color-bg-surface` |
 
 **状态定义：**
 
 | 状态 | 视觉变化 |
 |------|---------|
-| default | 边框 neutral-200 |
-| hover | 边框 neutral-400 |
-| focus | 边框 primary-700 + `box-shadow: 0 0 0 3px primary-500/15%` |
-| error | 边框 danger-500 + 下方错误文本（text-xs, danger-700） |
-| success | 边框 success-500 |
-| disabled | 背景 neutral-100，文字 neutral-400，禁用交互 |
-| readonly | 背景 neutral-50，边框 neutral-200 |
+| default | color-border-default |
+| hover | color-border-strong |
+| focus | color-border-focus + `box-shadow: 0 0 0 3px color-focus-ring` |
+| error | color-border-danger + 下方错误文本（text-xs, color-text-danger） |
+| success | color-border-success |
+| disabled | color-bg-subtle + color-text-tertiary，禁用交互 |
+| readonly | color-bg-page + color-border-default |
 
 **规则：**
 - 移动端字号不小于 16px，避免 iOS Safari 自动缩放
@@ -338,17 +356,22 @@ Profile 是产品级起点，不是跨产品硬性尺寸。移动端触控目标
 
 | 属性 | 规范 |
 |------|------|
-| 内边距 | `spacing-4`（16px）紧凑 / `spacing-6`（24px）标准 |
-| 圆角 | radius-lg（12px） |
-| 背景 | `color-bg-surface` |
-| 边框 | 1px solid `color-border-default`（扁平风格）或 none（阴影风格） |
-| 阴影 | shadow-sm（默认）→ shadow-md（悬停，仅可点击卡片） |
+| 内边距 | 16–24px，按产品密度在范围内选择 |
+| 圆角 | `radius-card`（36px）+ `corner-shape: squircle` |
+| 材质 | 用户选择的实体材质或液态玻璃 |
+| 标题 | 桌面 16–20px / 移动 16–18px |
+| 边界 | 使用所选材质对应的背景、边框和阴影 token |
 
 **规则：**
-- 边框和阴影二选一，不同时使用（避免视觉噪音）
-- 卡片内部元素间距使用 `spacing-3` 或 `spacing-4`
-- 可点击卡片必须有 hover 反馈，不可点击卡片不得有 hover 效果（避免误导）
-- 卡片标题使用 text-lg 或 text-xl，与正文有明确层级差
+- 生成前必须询问使用实体材质还是液态玻璃；未得到选择时不得自行启用玻璃
+- 同一页面使用同一种卡片材质，不混用实体与玻璃制造无意义层级
+- 卡片不得嵌套；玻璃卡片不得嵌套，玻璃材质也不得覆盖表格、工具栏或停靠面板
+- 高密度工作台优先减少卡片数量和内边距，不得另建小圆角卡片系统
+- 实体材质使用 `color-bg-surface`、默认边框和实体阴影
+- 液态玻璃必须有可辨识背景内容、足够文字对比度和边界；背景不可读时改用实体材质
+- 用户开启减少透明时，玻璃降级为实体背景并关闭 `backdrop-filter`
+- 可点击卡片必须实现 `hover`、`active` 和 `focus-visible`；不可点击卡片不得伪造交互反馈
+- 移动端可适度降低半径，但必须保持连续曲率，不得退回控件级圆角
 
 ### 模态框（Modal）
 
@@ -360,6 +383,8 @@ Profile 是产品级起点，不是跨产品硬性尺寸。移动端触控目标
 | 阴影 | shadow-xl |
 | 遮罩 | `rgba(0, 0, 0, 0.5)`，可选 `backdrop-filter: blur(4px)` |
 | 层级 | z-modal（1300），遮罩 z-overlay（1200） |
+
+Modal 是容器级浮层，不是卡片；它可以继续使用 `radius-xl`，不得套用或改写卡片圆角语言。
 
 **结构规范：**
 - 标题区：text-xl，字重 600，底部间距 `spacing-4`
@@ -378,9 +403,9 @@ Profile 是产品级起点，不是跨产品硬性尺寸。移动端触控目标
 |------|------|
 | 行高 | 紧凑 40px / 标准 48px / 宽松 56px |
 | 单元格内边距 | 水平 `spacing-4`，垂直居中 |
-| 表头 | 背景 neutral-50，字重 600，字号 text-sm |
-| 分隔线 | 1px solid neutral-200（仅水平线，避免网格感） |
-| 行悬停 | 背景 `color-bg-hover` |
+| 表头 | 背景 color-bg-subtle，字重 600，字号 text-sm |
+| 分隔线 | 1px solid color-border-default（仅水平线，避免网格感） |
+| 行悬停 | 背景 color-bg-subtle |
 
 **规则：**
 - 数字列右对齐，文本列左对齐，操作列居中或右对齐
@@ -396,8 +421,8 @@ Profile 是产品级起点，不是跨产品硬性尺寸。移动端触控目标
 | 内边距 | 2px 8px（小）/ 4px 10px（默认） |
 | 字号 | text-xs |
 | 圆角 | radius-sm（方形风格）或 radius-full（胶囊风格） |
-| 背景 | primary / success / danger 的 100 色阶，或 neutral-100 |
-| 文字 | 对应语义色的 700 色阶，或 neutral-700 |
+| 背景 | color-bg-selected / success / danger，或 color-bg-subtle |
+| 文字 | 对应语义文字色，或 color-text-secondary |
 
 **规则：**
 - 成功、错误和信息标签使用对应语义色；警告标签使用中性色并配合警告图标和明确文案
@@ -408,11 +433,11 @@ Profile 是产品级起点，不是跨产品硬性尺寸。移动端触控目标
 
 ## 精简色板维护
 
-共享品牌色只维护 `100 / 500 / 700` 三档：
+共享品牌色继续维护 `100 / 500 / 700` 三档：
 
-- `100`：低强调背景，不承载主要正文
-- `500`：品牌识别、图标、大号文字和非文本强调
-- `700`：小号文字、实心按钮和高对比状态
+- `100`：明确请求的浅色主题低强调背景，不承载主要正文
+- `500`：默认暗色主题的品牌识别、焦点、图标和关键操作
+- `700`：明确请求的浅色主题小号文字、实心按钮和高对比状态
 
 扩展颜色前需要确认它解决的是稳定、重复出现的角色。单次页面装饰不进入品牌级色板，可在产品局部定义。
 
@@ -446,45 +471,15 @@ Tokens 到各平台的具体落地方式，完整模板见 `platform-implementat
 
 ---
 
-## 暗色模式扩展
+## 主题生成规则
 
-暗色模式不是简单反转颜色，而是重新映射语义别名。
+默认暗色是生成硬边界，`:root` 直接承载暗色语义别名，`--color-primary` 指向 `primary-500`。浅色主题只有用户明确请求时才生成，并需完整重映射页面、表面、文字、边框、状态和焦点颜色。
 
-### 映射策略
-
-| 语义别名 | 亮色模式 | 暗色模式 |
-|---------|---------|---------|
-| `color-bg-page` | neutral-50 | neutral-900 |
-| `color-bg-surface` | white | 产品级暗色 surface |
-| `color-bg-hover` | neutral-100 | neutral-700 |
-| `color-text-primary` | neutral-900 | neutral-50 |
-| `color-text-secondary` | neutral-700 | neutral-200 |
-| `color-text-tertiary` | neutral-400 | neutral-400 |
-| `color-border-default` | neutral-200 | neutral-700 |
-| `color-primary` | primary-700 | primary-500（暗背景上使用基准色） |
-
-### 暗色模式规则
-
-- 暗色模式优先重新校验品牌色对比度，不做机械反色
-- 阴影在暗色模式下几乎不可见，改用边框区分层级
-- 纯黑背景（#000）容易造成 OLED 屏幕上的拖影，建议使用 neutral-900
-- 图片和插画需要单独处理（降低亮度或提供暗色版本）
-
-### 实现方式
-
-```css
-:root {
-  --color-bg-page: var(--color-neutral-50);
-  --color-text-primary: var(--color-neutral-900);
-}
-
-[data-theme="dark"] {
-  --color-bg-page: var(--color-neutral-900);
-  --color-text-primary: var(--color-neutral-50);
-}
-```
-
-业务代码始终使用语义别名，切换主题时无需改动任何组件代码。
+- 暗色语义不能通过机械反色得到
+- 页面使用 `#09090B`，实体表面使用 `#141418`，抬升表面使用 `#1B1B20`
+- 暗色层级优先依靠表面、边框与局部阴影共同表达
+- 图片和插画需要单独校验亮度、对比度或提供暗色版本
+- 业务代码始终使用语义别名，主题变化不得要求修改组件内部颜色
 
 ---
 
