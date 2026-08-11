@@ -7,31 +7,33 @@ description: Use when 用户需要审查前端视觉一致性、生成符合品�
 
 你是公司前端设计系统的守护者，负责确保所有产品的视觉和交互保持一致。
 
-## 自动路由
+## 强制入口
 
-根据用户输入，自动识别意图并路由到对应模式：
+涉及规划、创建、生成、审查或改进 UI 时，先完成以下入口，不得直接生成代码。
 
-| 触发条件 | 路由到 | 说明 |
-|---------|--------|------|
-| 提供代码/文件路径 + "检查"/"审查"/"符合规范吗" | **审查模式** | 对照标准检查代码，输出问题清单 + 改进建议 |
-| 描述需求 + "生成"/"创建"/"按标准做" | **生成模式** | 基于标准生成符合规范的代码 |
-| "提取规范"/"分析现有代码"/"总结约定" | **提取模式** | 从代码库反向工程出设计规范 |
-| "建立标准"/"初始化规范"/"填写品牌" 或首次使用 | **引导模式** | 访谈式建立完整设计系统 |
+### 第 0 步：品牌模式
 
-## 品牌配置检测
+询问是否使用 OneSeven / 壹柒研究所品牌指导：
 
-在通用模式之前检查是否存在品牌配置。
+A. 使用品牌指导（默认）
+B. 使用当前项目已有设计系统
+C. 不使用现有品牌，建立新的品牌规范
 
-当用户提到 `OneSeven`、`壹柒研究所`、`17 RESEARCH INSTITUTE`，或项目中存在明确的壹柒研究所品牌信号时：
+规则：未明确、默认或跳过时选 A；同一请求已明确则记录并继续、不重复提问。
 
-1. 读取 `references/oneseven-guidance.md`
-2. 使用 `assets/oneseven-logo.png` 作为 Logo 对照
-3. Web 生成任务使用 `assets/fonts/` 中的 Alibaba PuHuiTi WOFF2 和 `theme.css`
-4. 跳过通用 `visual-system.md` 的占位符提示
-5. 以“品牌指导 → 产品局部系统 → 通用参考”的顺序审查
-6. 如环境存在 `apple-design` Skill，将其作为参考指导，不作为强制规范
+### 第 1 步：项目阶段
 
-品牌配置优先于通用数值规范。品牌配置未规定的内容，先判断产品内部是否一致，再参考通用文档。
+询问：
+
+A. 规划与需求
+B. 代码实现
+C. 已有页面审查或改进
+
+不得根据目录是否有代码推断阶段。
+
+- A 读取 `references/planning-workflow.md`。
+- B 进入实现路由，且已有批准规范必须先读。
+- C 读取 `references/review-checklist.md`。
 
 ## 核心原则
 
@@ -56,6 +58,11 @@ description: Use when 用户需要审查前端视觉一致性、生成符合品�
 
 ## 工作流引用
 
+- 规划阶段：`references/planning-workflow.md`
+- 产品画像：`references/product-archetypes.md`
+- Hero 规范：`references/hero-standards.md`
+- SaaS 工作台：`references/saas-workbench-standards.md`
+- 生成质量门槛：`references/generation-quality-gate.md`
 - 详细视觉规范：`references/visual-system.md`
 - 动效和交互标准：`references/motion-standards.md`
 - 代码审查检查清单：`references/review-checklist.md`
@@ -63,21 +70,6 @@ description: Use when 用户需要审查前端视觉一致性、生成符合品�
 - 从代码提取规范：`references/extraction-workflow.md`
 - 分平台实现指南：`references/platform-implementations.md`
 - OneSeven 品牌指导：`references/oneseven-guidance.md`
-
-## 首次使用检测
-
-如果已匹配 OneSeven 品牌配置，直接使用 `oneseven-guidance.md`，不要触发本节。
-
-其他项目中，如果 `visual-system.md` 的品牌基础层仍为占位符（包含"待填写"），说明尚未建立标准。主动提示用户：
-
-```
-检测到尚未建立设计规范。我可以通过两种方式帮你：
-
-A. **访谈式引导**（推荐）- 10分钟问答，建立完整标准
-B. **从代码提取** - 分析现有组件，总结隐性规范
-
-选择 A 或 B，或告诉我"稍后再说"。
-```
 
 ## 审查模式输出格式
 
@@ -113,15 +105,6 @@ OneSeven 项目改用 `oneseven-guidance.md` 中的四段式报告：
 4. Apple Design 参考建议
 
 除 Logo、字体和品牌紫定位等明确冲突外，不要把不同产品的布局、密度、圆角或尺寸差异列为强制问题。
-
-## 生成模式要点
-
-1. 先询问技术栈（React/Vue/小程序/传统页面）
-2. 优先使用已匹配的品牌配置；无品牌配置时使用 `visual-system.md`
-3. 参考 `platform-implementations.md` 选择正确的实现方式
-4. 动效参考 `motion-standards.md` 的标准参数
-5. 延续目标产品的局部设计系统，不强行套用其他产品组件
-6. 生成后主动说明符合的品牌原则和产品内部规律
 
 ## 提取模式要点
 
