@@ -305,6 +305,14 @@ const rootDeclarationValues = (blocks, property) =>
     cssDeclarationValues(body, property),
   );
 
+const selectorContainsCard = (selector) =>
+  /\[\s*data-ui-card\s*\]/i.test(selector);
+
+const selectorTargetsLiquidRoot = (selector) =>
+  /:root\s*\[\s*data-ui-card-material\s*=\s*(?:"liquid-glass"|'liquid-glass'|liquid-glass)\s*\]/i.test(
+    selector,
+  );
+
 const hasCssDeclaration = (blocks, property) =>
   blocks.some(
     ({ prelude, body }) =>
@@ -318,6 +326,62 @@ const hasMediaFeature = (blocks, feature, value) =>
       prelude.startsWith('@media') &&
       new RegExp(`${feature}\\s*:\\s*${value}`, 'i').test(prelude),
   );
+
+const hasLiquidGlassBackdrop = (blocks) =>
+  blocks.some(({ prelude, body }) => {
+    if (prelude.startsWith('@') || !selectorContainsCard(prelude)) {
+      return false;
+    }
+
+    return [
+      ...cssDeclarationValues(body, 'backdrop-filter'),
+      ...cssDeclarationValues(body, '-webkit-backdrop-filter'),
+    ].some((value) => !/^none\b/i.test(value));
+  });
+
+const hasLiquidGlassFallback = (blocks) =>
+  blocks
+    .filter(
+      ({ prelude }) =>
+        prelude.startsWith('@media') &&
+        /prefers-reduced-transparency\s*:\s*reduce/i.test(prelude),
+    )
+    .some(({ body }) => {
+      const fallbackBlocks = collectCssBlocks(body);
+      const relevantBlocks = fallbackBlocks.filter(
+        ({ prelude }) =>
+          !prelude.startsWith('@') &&
+          (selectorContainsCard(prelude) ||
+            selectorTargetsLiquidRoot(prelude)),
+      );
+      const hasEntityFallback = relevantBlocks.some(
+        ({ body: fallbackBody }) => {
+          const hasBackground =
+            cssDeclarationValues(fallbackBody, 'background').length > 0;
+          const hasBorder =
+            cssDeclarationValues(fallbackBody, 'border').length > 0;
+          const hasBackgroundToken =
+            cssDeclarationValues(fallbackBody, '--card-background').length > 0;
+          const hasBorderToken =
+            cssDeclarationValues(fallbackBody, '--card-border').length > 0;
+
+          return (
+            (hasBackground && hasBorder) ||
+            (hasBackgroundToken && hasBorderToken)
+          );
+        },
+      );
+      const disablesBackdrop = relevantBlocks.some(
+        ({ prelude, body: fallbackBody }) =>
+          selectorContainsCard(prelude) &&
+          [
+            ...cssDeclarationValues(fallbackBody, 'backdrop-filter'),
+            ...cssDeclarationValues(fallbackBody, '-webkit-backdrop-filter'),
+          ].some((value) => /^none\b/i.test(value)),
+      );
+
+      return hasEntityFallback && disablesBackdrop;
+    });
 
 const hasDecorativeCircle = (blocks) =>
   blocks.some(({ prelude, body }) => {
@@ -397,14 +461,14 @@ export const analyzeHtml = (html, options = {}) => {
   if (!metadataPageType && !hasPageTypeOverride) {
     addIssue(
       'page-type-required',
-      'The html element must declare data-ui-page-type.',
+      'html 元素必须声明 data-ui-page-type。',
     );
   }
 
   if (!hero) {
     addIssue(
       'hero-metadata-required',
-      'The html element must declare data-ui-hero.',
+      'html 元素必须声明 data-ui-hero。',
     );
   }
 
@@ -417,7 +481,7 @@ export const analyzeHtml = (html, options = {}) => {
   if (!declaresDarkColorScheme) {
     addIssue(
       'dark-theme-required',
-      'The stylesheet must declare color-scheme: dark.',
+      '样式表必须声明 color-scheme: dark。',
     );
   }
 
@@ -430,7 +494,7 @@ export const analyzeHtml = (html, options = {}) => {
   if (headingSizes.some((value) => value > headingLimit)) {
     addIssue(
       'heading-too-large',
-      `Heading font sizes must not exceed ${headingLimit}px for ${pageType}.`,
+      `页面类型 ${pageType} 的标题字号不得超过 ${headingLimit}px。`,
     );
   }
 
@@ -438,7 +502,7 @@ export const analyzeHtml = (html, options = {}) => {
     if (!cardMaterial) {
       addIssue(
         'card-material-required',
-        'Pages with data-ui-card elements must declare data-ui-card-material.',
+        '包含 data-ui-card 元素的页面必须声明 data-ui-card-material。',
       );
     }
 
@@ -451,65 +515,65 @@ export const analyzeHtml = (html, options = {}) => {
     if (radius < 36) {
       addIssue(
         'card-radius-too-small',
-        'The root --radius-card value must be at least 36px.',
+        '根级 --radius-card 的值不得小于 36px。',
       );
     }
 
-    const cornerShapes = [
-      ...rootDeclarationValues(blocks, '--corner-shape'),
-      ...rootDeclarationValues(blocks, 'corner-shape'),
-    ];
-    if (!cornerShapes.some((value) => /\bsquircle\b/i.test(value))) {
+    const cardUsesSquircle = blocks.some(
+      ({ prelude, body }) =>
+        !prelude.startsWith('@') &&
+        selectorContainsCard(prelude) &&
+        cssDeclarationValues(body, 'corner-shape').some((value) =>
+          /\bsquircle\b/i.test(value),
+        ),
+    );
+    if (!cardUsesSquircle) {
       addIssue(
         'corner-shape-required',
-        'Cards require a root squircle corner shape declaration.',
+        '实际的 [data-ui-card] 样式规则必须声明 corner-shape: squircle。',
       );
     }
   }
 
   if (document.hasNestedCards) {
-    addIssue('nested-card', 'A data-ui-card must not contain another card.');
+    addIssue('nested-card', 'data-ui-card 不得嵌套另一个卡片。');
   }
 
   if (
     cardMaterial === 'liquid-glass' &&
-    (!(
-      hasCssDeclaration(blocks, 'backdrop-filter') ||
-      hasCssDeclaration(blocks, '-webkit-backdrop-filter')
-    ) ||
-      !hasMediaFeature(blocks, 'prefers-reduced-transparency', 'reduce'))
+    (!hasLiquidGlassBackdrop(blocks) || !hasLiquidGlassFallback(blocks))
   ) {
     addIssue(
       'liquid-glass-fallback-required',
-      'Liquid glass requires backdrop filtering and a reduced-transparency fallback.',
+      '液态玻璃卡片必须提供 backdrop-filter 和完整的降低透明度实体回退。',
     );
   }
 
   if (hasDecorativeCircle(blocks)) {
     addIssue(
       'decorative-circle',
-      'Large decorative circles are not permitted.',
+      '不允许使用大型装饰圆形。',
     );
   }
 
   if (hasHeroSplit(blocks) && !heroEvidence) {
     addIssue(
       'hero-split-decorative',
-      'Split heroes require meaningful product or media evidence.',
+      '分栏 Hero 必须包含有意义的产品或媒体证据。',
     );
   }
 
   if (hero === 'approved' && !heroEvidence) {
     addIssue(
       'hero-evidence-required',
-      'Approved heroes require product-state or hero-media evidence.',
+      '已批准的 Hero 必须包含产品状态或 Hero 媒体证据。',
     );
   }
 
   if (isSaas && hasSaasHero(elements)) {
     addIssue(
       'saas-hero-forbidden',
-      'SaaS workspaces must not render a hero container.',
+      'SaaS 工作区不得渲染 Hero 容器。',
     );
   }
 
@@ -517,10 +581,16 @@ export const analyzeHtml = (html, options = {}) => {
     /--[\w-]+\s*:[^;{}]*(?:;|(?=\}))/g,
     '',
   );
-  if (/#9a6aba\b/i.test(cssWithoutCustomProperties)) {
+  const hasInlineBrandColor = elements.some(({ attributes }) =>
+    /#9a6aba\b/i.test(attributes.get('style') ?? ''),
+  );
+  if (
+    /#9a6aba\b/i.test(cssWithoutCustomProperties) ||
+    hasInlineBrandColor
+  ) {
     addIssue(
       'brand-color-hardcoded',
-      'Use a design token instead of hardcoding #9a6aba.',
+      '请使用设计令牌，不要硬编码 #9a6aba。',
     );
   }
 
@@ -531,7 +601,7 @@ export const analyzeHtml = (html, options = {}) => {
   if (hasInteractiveElement(elements) && !hasFocusVisibleRule) {
     addIssue(
       'focus-visible-required',
-      'Interactive elements require a :focus-visible style.',
+      '交互元素必须提供 :focus-visible 样式。',
     );
   }
 
@@ -562,12 +632,13 @@ export const analyzeHtml = (html, options = {}) => {
   ) {
     addIssue(
       'reduced-motion-required',
-      'Animation and transition styles require a reduced-motion fallback.',
+      '动画和过渡样式必须提供减少动态效果的回退。',
     );
   }
 
   return {
     ok: !issues.some(({ severity }) => severity === 'error'),
+    pageType,
     issues,
   };
 };
@@ -586,7 +657,7 @@ const parseArguments = (args) => {
     if (argument === '--file' || argument === '--page-type') {
       const value = args[index + 1];
       if (!value || value.startsWith('--')) {
-        throw new Error(`Missing value for ${argument}.`);
+        throw new Error(`参数 ${argument} 缺少值。`);
       }
       const key = argument === '--file' ? 'file' : 'pageType';
       options[key] = value;
@@ -594,11 +665,11 @@ const parseArguments = (args) => {
       continue;
     }
 
-    throw new Error(`Unknown argument: ${argument}`);
+    throw new Error(`未知参数：${argument}`);
   }
 
   if (!options.file) {
-    throw new Error('Missing required --file argument.');
+    throw new Error('缺少必需的 --file 参数。');
   }
 
   return options;
@@ -612,10 +683,10 @@ const main = async () => {
   if (options.json) {
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   } else if (report.issues.length === 0) {
-    process.stdout.write('UI Standard static validation passed\n');
+    process.stdout.write('UI Standard 静态校验通过\n');
   } else {
     for (const issue of report.issues) {
-      process.stdout.write(`[${issue.severity}] ${issue.code}: ${issue.message}\n`);
+      process.stdout.write(`[错误] ${issue.code}：${issue.message}\n`);
     }
   }
 
@@ -628,7 +699,7 @@ const isDirectRun =
 
 if (isDirectRun) {
   main().catch((error) => {
-    process.stderr.write(`UI Standard validator error: ${error.message}\n`);
+    process.stderr.write(`UI Standard 校验器错误：${error.message}\n`);
     process.exitCode = 1;
   });
 }
