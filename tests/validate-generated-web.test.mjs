@@ -240,6 +240,86 @@ test('页面类型只读取 html metadata，并可由 options 覆盖', () => {
   assert.equal(overridden.pageType, 'saas-analytics');
 });
 
+test('未知页面类型是阻塞错误', () => {
+  const report = analyzeHtml(`
+    <html data-ui-page-type="saas-operation" data-ui-hero="none">
+      <style>:root { color-scheme: dark; }</style>
+    </html>
+  `);
+
+  const issue = report.issues.find(({ code }) => code === 'page-type-invalid');
+  assert.equal(issue?.severity, 'error');
+  assert.equal(report.ok, false);
+});
+
+test('外链样式交给浏览器验收且不阻塞静态校验', () => {
+  const report = analyzeHtml(`
+    <html
+      data-ui-page-type="saas-operations"
+      data-ui-hero="none"
+      data-ui-card-material="solid"
+    >
+      <link rel="stylesheet" href="./theme.css">
+      <main><h1 style="font-size: 1.5rem">客户项目</h1></main>
+    </html>
+  `);
+
+  assert.equal(report.ok, true);
+  assert.equal(
+    report.issues.find(
+      ({ code }) => code === 'stylesheet-browser-review-required',
+    )?.severity,
+    'warning',
+  );
+  assert.equal(
+    report.issues.find(
+      ({ code }) => code === 'heading-size-browser-review-required',
+    )?.severity,
+    'warning',
+  );
+  assert.ok(
+    report.issues
+      .filter(({ code }) =>
+        [
+          'dark-theme-required',
+          'heading-size-browser-review-required',
+          'stylesheet-browser-review-required',
+        ].includes(code),
+      )
+      .every(({ severity }) => severity === 'warning'),
+  );
+});
+
+test('内联 px 标题超限仍是阻塞错误', () => {
+  const report = analyzeHtml(`
+    <html data-ui-page-type="saas-operations" data-ui-hero="none">
+      <style>:root { color-scheme: dark; }</style>
+      <h1 style="font-size: 40px">客户项目</h1>
+    </html>
+  `);
+
+  assert.equal(
+    report.issues.find(({ code }) => code === 'heading-too-large')?.severity,
+    'error',
+  );
+  assert.equal(report.ok, false);
+});
+
+test('暗色声明必须位于根元素且以 dark 为默认值', () => {
+  for (const css of [
+    '.preview { color-scheme: dark; }',
+    ':root { color-scheme: light dark; }',
+  ]) {
+    const report = analyzeHtml(`
+      <html data-ui-page-type="marketing" data-ui-hero="none">
+        <style>${css}</style>
+      </html>
+    `);
+
+    assert.ok(issueCodes(report).includes('dark-theme-required'));
+  }
+});
+
 test('卡片检测忽略 script 和 style 中的伪标签字符串', () => {
   const report = analyzeHtml(`
     <html data-ui-page-type="marketing" data-ui-hero="none">

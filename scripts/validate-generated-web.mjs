@@ -4,6 +4,21 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+const VALID_PAGE_TYPES = new Set([
+  'marketing',
+  'product',
+  'content',
+  'commerce',
+  'community',
+  'consumer-tool',
+  'saas-operations',
+  'saas-ai-workspace',
+  'saas-analytics',
+  'platform',
+  'account',
+  'workflow',
+]);
+
 const SAAS_TYPES = new Set([
   'saas-operations',
   'saas-ai-workspace',
@@ -272,6 +287,18 @@ const largestPxValue = (source) => {
   return values.length === 0 ? null : Math.max(...values);
 };
 
+const hasUnresolvedLength = (source) =>
+  /-?\d*\.?\d+\s*(?:rem|em|vw|vh|vmin|vmax|cqw|cqh)\b|var\s*\(|calc\s*\(/i.test(
+    source,
+  );
+
+const inlineStyleValue = (style, property) => {
+  const escapedProperty = property.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return style.match(
+    new RegExp(`(?:^|;)\\s*${escapedProperty}\\s*:\\s*([^;]+)`, 'i'),
+  )?.[1]?.trim();
+};
+
 const selectorTargetsHeading = (selector) =>
   /(^|[\s>+~,])h1(?=$|[\s>+~,.:[#])/i.test(selector) ||
   /\.display-title\b/i.test(selector) ||
@@ -316,6 +343,16 @@ const rootBlocks = (blocks) =>
 const rootDeclarationValues = (blocks, property) =>
   rootBlocks(blocks).flatMap(({ body }) =>
     cssDeclarationValues(body, property),
+  );
+
+const rootOrHtmlBlocks = (blocks) =>
+  blocks.filter(
+    ({ prelude, isConditional }) =>
+      !isConditional &&
+      prelude
+        .split(',')
+        .map((selector) => selector.trim().toLowerCase())
+        .some((selector) => selector === ':root' || selector === 'html'),
   );
 
 const selectorContainsCard = (selector) =>
@@ -428,9 +465,9 @@ const hasHeroSplit = (blocks) => {
   return heroUsesColumns && hasHeroAside;
 };
 
-const createIssue = (code, message) => ({
+const createIssue = (code, message, severity = 'error') => ({
   code,
-  severity: 'error',
+  severity,
   message,
 });
 
@@ -440,10 +477,10 @@ export const analyzeHtml = (html, options = {}) => {
   const blocks = collectCssBlocks(styleSource);
   const issues = [];
   const issueCodes = new Set();
-  const addIssue = (code, message) => {
+  const addIssue = (code, message, severity = 'error') => {
     if (!issueCodes.has(code)) {
       issueCodes.add(code);
-      issues.push(createIssue(code, message));
+      issues.push(createIssue(code, message, severity));
     }
   };
 
@@ -458,11 +495,27 @@ export const analyzeHtml = (html, options = {}) => {
   const isSaas = SAAS_TYPES.has(pageType);
   const heroEvidence = hasHeroEvidence(elements);
   const cards = elements.filter(({ isCard }) => isCard);
+  const hasLinkedStylesheet = elements.some(
+    ({ name, attributes }) =>
+      name === 'link' &&
+      (attributes.get('rel') ?? '')
+        .toLowerCase()
+        .split(/\s+/)
+        .includes('stylesheet'),
+  );
+  const cssMissingSeverity = hasLinkedStylesheet ? 'warning' : 'error';
 
   if (!metadataPageType && !hasPageTypeOverride) {
     addIssue(
       'page-type-required',
       'html 元素必须声明 data-ui-page-type。',
+    );
+  }
+
+  if (!VALID_PAGE_TYPES.has(pageType)) {
+    addIssue(
+      'page-type-invalid',
+      `页面类型 ${pageType} 不在允许的十二种类型中。`,
     );
   }
 
@@ -473,31 +526,61 @@ export const analyzeHtml = (html, options = {}) => {
     );
   }
 
-  const declaresDarkColorScheme = blocks.some(
-    ({ prelude, body, isConditional }) =>
-      !isConditional &&
-      !prelude.startsWith('@') &&
-      cssDeclarationValues(body, 'color-scheme').some((value) =>
-        /\bdark\b/i.test(value),
-      ),
+  if (hasLinkedStylesheet) {
+    addIssue(
+      'stylesheet-browser-review-required',
+      '页面使用外链样式表；静态校验不解析外部级联，请在浏览器验收中确认视觉规则。',
+      'warning',
+    );
+  }
+
+  const colorSchemeValues = rootOrHtmlBlocks(blocks).flatMap(({ body }) =>
+    cssDeclarationValues(body, 'color-scheme'),
   );
+  const declaredColorScheme = colorSchemeValues.at(-1)?.trim().toLowerCase();
+  const declaresDarkColorScheme =
+    declaredColorScheme?.startsWith('dark') ?? false;
   if (!declaresDarkColorScheme) {
     addIssue(
       'dark-theme-required',
       '样式表必须声明 color-scheme: dark。',
+      cssMissingSeverity,
     );
   }
 
   const headingLimit = isSaas ? 24 : 42;
-  const headingSizes = blocks
+  const headingDeclarations = blocks
     .filter(({ prelude }) => selectorTargetsHeading(prelude))
-    .flatMap(({ body }) => cssDeclarationValues(body, 'font-size'))
+    .flatMap(({ body }) => cssDeclarationValues(body, 'font-size'));
+  const inlineHeadingDeclarations = elements
+    .filter(
+      ({ name, attributes }) =>
+        name === 'h1' ||
+        classListIncludes(attributes, 'display-title') ||
+        attributes.get('data-ui-role') === 'hero-title',
+    )
+    .map(({ attributes }) =>
+      inlineStyleValue(attributes.get('style') ?? '', 'font-size'),
+    )
+    .filter(Boolean);
+  const allHeadingDeclarations = [
+    ...headingDeclarations,
+    ...inlineHeadingDeclarations,
+  ];
+  const headingSizes = allHeadingDeclarations
     .map(largestPxValue)
     .filter((value) => value !== null);
   if (headingSizes.some((value) => value > headingLimit)) {
     addIssue(
       'heading-too-large',
       `页面类型 ${pageType} 的标题字号不得超过 ${headingLimit}px。`,
+    );
+  }
+  if (allHeadingDeclarations.some(hasUnresolvedLength)) {
+    addIssue(
+      'heading-size-browser-review-required',
+      '标题字号包含静态校验无法可靠换算的单位或表达式，请在浏览器验收中确认上限。',
+      'warning',
     );
   }
 
@@ -519,6 +602,7 @@ export const analyzeHtml = (html, options = {}) => {
       addIssue(
         'card-radius-too-small',
         '根级 --radius-card 的值不得小于 36px。',
+        cssMissingSeverity,
       );
     }
 
@@ -534,6 +618,7 @@ export const analyzeHtml = (html, options = {}) => {
       addIssue(
         'corner-shape-required',
         '实际的 [data-ui-card] 样式规则必须声明 corner-shape: squircle。',
+        cssMissingSeverity,
       );
     }
   }
@@ -549,6 +634,7 @@ export const analyzeHtml = (html, options = {}) => {
     addIssue(
       'liquid-glass-fallback-required',
       '液态玻璃卡片必须提供 backdrop-filter 和完整的降低透明度实体回退。',
+      cssMissingSeverity,
     );
   }
 
@@ -605,6 +691,7 @@ export const analyzeHtml = (html, options = {}) => {
     addIssue(
       'focus-visible-required',
       '交互元素必须提供 :focus-visible 样式。',
+      cssMissingSeverity,
     );
   }
 
@@ -636,6 +723,7 @@ export const analyzeHtml = (html, options = {}) => {
     addIssue(
       'reduced-motion-required',
       '动画和过渡样式必须提供减少动态效果的回退。',
+      cssMissingSeverity,
     );
   }
 
@@ -698,7 +786,8 @@ const main = async () => {
     process.stdout.write('UI Standard 静态校验通过\n');
   } else {
     for (const issue of report.issues) {
-      process.stdout.write(`[错误] ${issue.code}：${issue.message}\n`);
+      const label = issue.severity === 'warning' ? '警告' : '错误';
+      process.stdout.write(`[${label}] ${issue.code}：${issue.message}\n`);
     }
   }
 
