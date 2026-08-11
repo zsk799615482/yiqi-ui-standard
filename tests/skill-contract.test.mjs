@@ -21,6 +21,16 @@ const markdownSection = (markdown, heading) => {
   );
 };
 
+const assertMarkdownListItems = (section, items, label) => {
+  for (const item of items) {
+    assert.match(
+      section,
+      new RegExp(`^- ${escapeRegExp(item)}。?$`, 'm'),
+      `missing exact ${label} list item: ${item}`,
+    );
+  }
+};
+
 test('SKILL entry asks brand mode before project stage', async () => {
   const skill = await read('SKILL.md');
 
@@ -336,62 +346,53 @@ test('SaaS reference includes all approved workbench shells', async () => {
     '控件和固定格式区域稳定尺寸',
     '不用装饰卡片填充页面，不堆叠装饰卡片',
     '连续大圆角不能损害表格、筛选和高密度信息空间效率',
+    '表格、列表行、筛选栏、工具栏、数据网格、停靠面板是工作台结构区域，不定义为卡片，可使用直边或控件级圆角',
+    '只有独立、可识别的内容容器才是卡片，并继续使用统一连续大圆角',
+    '不得为了应用大圆角把每个区域包成卡片，也不得通过缩小卡片圆角建立另一套卡片语言',
     '三类都 No Hero',
   ];
 
-  for (const rule of sharedRules) {
-    assert.match(
-      commonRules,
-      new RegExp(escapeRegExp(rule)),
-      `missing SaaS common rule: ${rule}`,
-    );
-  }
+  assertMarkdownListItems(commonRules, sharedRules, 'SaaS common rule');
 
   const operationalRules = [
-    '固定/可折叠侧栏',
+    '固定或可折叠侧栏',
     '上下文工具栏',
     '搜索、筛选和批量操作',
-    '表格、列表、审批、项目和状态',
-    '扫描、比较和操作效率',
+    '表格、列表、审批和项目状态',
+    '优先保证扫描、比较和操作效率',
   ];
 
-  for (const rule of operationalRules) {
-    assert.match(
-      operations,
-      new RegExp(escapeRegExp(rule)),
-      `missing operational workbench rule: ${rule}`,
-    );
-  }
+  assertMarkdownListItems(
+    operations,
+    operationalRules,
+    'operational workbench rule',
+  );
 
   const aiCreationRules = [
-    '导航/项目栏',
-    '主画布/对话区/输出工作区',
-    '参数检查器/上下文面板',
-    '运行、等待、完成、错误和恢复状态',
+    '导航栏或项目栏',
+    '主画布、对话区或输出工作区',
+    '参数检查器或上下文面板',
+    '明确运行、等待、完成、错误和恢复状态',
     '输入输出保持空间和任务关联',
   ];
 
-  for (const rule of aiCreationRules) {
-    assert.match(
-      aiCreation,
-      new RegExp(escapeRegExp(rule)),
-      `missing AI creation workbench rule: ${rule}`,
-    );
-  }
+  assertMarkdownListItems(
+    aiCreation,
+    aiCreationRules,
+    'AI creation workbench rule',
+  );
 
   const analyticsRules = [
-    '导航/时间范围',
-    '维度筛选',
+    '导航与时间范围',
+    '维度和筛选控制',
     '指标、趋势、比较和明细',
-    '异常状态/数据解释',
+    '异常状态和数据解释',
     '数字对齐、单位和时间范围清晰',
   ];
 
-  for (const rule of analyticsRules) {
-    assert.match(
-      analytics,
-      new RegExp(escapeRegExp(rule)),
-      `missing analytics workbench rule: ${rule}`,
-    );
-  }
+  assertMarkdownListItems(
+    analytics,
+    analyticsRules,
+    'analytics workbench rule',
+  );
 });
