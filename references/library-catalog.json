@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "snapshotDate": "2026-09-02",
+  "source": "emilkowalski/skills pick-ui-library reference, adapted for Yiqi",
+  "policy": {
+    "nativeFirst": true,
+    "existingDependencyWins": true,
+    "singleRecommendation": true,
+    "automaticInstall": false,
+    "reverifyAtImplementation": true
+  },
+  "entries": [
+    {
+      "id": "accessible-primitives",
+      "task": "dialog-popover-menu-select",
+      "name": "Base UI",
+      "supportedStacks": ["react"],
+      "licenseClass": "permissive",
+      "whenToUse": ["需要无样式且可访问的 Dialog、Popover、Menu 或 Select Primitive"],
+      "whenNotToUse": ["项目已经使用 Radix、Headless UI 或其他等价 Primitive", "原生 dialog/select 已足够"],
+      "accessibility": "verify-focus-aria-keyboard",
+      "performance": "light",
+      "brandRule": "只使用行为和无障碍能力，视觉全部由项目 Token 实现",
+      "fallback": "原生 dialog、select 或项目现有 Primitive"
+    },
+    {
+      "id": "toast",
+      "task": "toast-notification",
+      "name": "Sonner",
+      "supportedStacks": ["react"],
+      "licenseClass": "permissive",
+      "whenToUse": ["需要堆叠通知", "需要 loading 或 promise 状态"],
+      "whenNotToUse": ["项目已有统一通知系统", "只需要一次性内联状态提示"],
+      "accessibility": "verify-live-region-dismissal",
+      "performance": "light",
+      "brandRule": "只使用 API 和行为，不复制供应商 Toast 样式",
+      "fallback": "项目现有通知系统或内联状态提示"
+    },
+    {
+      "id": "command-menu",
+      "task": "command-menu",
+      "name": "cmdk",
+      "supportedStacks": ["react"],
+      "licenseClass": "permissive",
+      "whenToUse": ["需要键盘驱动的命令菜单或快速搜索"],
+      "whenNotToUse": ["只有少量导航项", "命令面板是高频切换且可以使用原生焦点管理"],
+      "accessibility": "verify-keyboard-aria",
+      "performance": "light",
+      "brandRule": "命令面板切换默认即时，不复制供应商视觉",
+      "fallback": "原生 input、listbox 与项目现有菜单 Primitive"
+    },
+    {
+      "id": "charts",
+      "task": "general-charts",
+      "name": "Recharts",
+      "supportedStacks": ["react"],
+      "licenseClass": "permissive",
+      "whenToUse": ["需要常规静态或交互式业务图表"],
+      "whenNotToUse": ["只需一个简单进度条或 CSS 可表达的指标", "实时流式数据需要专用流式图表方案"],
+      "accessibility": "verify-labels-contrast-table-fallback",
+      "performance": "medium",
+      "brandRule": "图表颜色、字体、网格和 tooltip 必须映射到 OneSeven Token",
+      "fallback": "原生 SVG、CSS 图表或表格化数据"
+    },
+    {
+      "id": "drag-and-drop",
+      "task": "drag-and-drop",
+      "name": "dnd-kit",
+      "supportedStacks": ["react"],
+      "licenseClass": "permissive",
+      "whenToUse": ["需要排序、拖放或可访问的拖拽交互"],
+      "whenNotToUse": ["只有一个简单按钮拖动", "原生 draggable 已满足任务"],
+      "accessibility": "verify-keyboard-sensors-announcements",
+      "performance": "medium",
+      "brandRule": "拖拽反馈遵循 animation-craft 的 1:1 跟手和可中断原则",
+      "fallback": "原生 draggable 或上下移动按钮"
+    },
+    {
+      "id": "virtualization",
+      "task": "long-list-virtualization",
+      "name": "Virtuoso",
+      "supportedStacks": ["react"],
+      "licenseClass": "permissive",
+      "whenToUse": ["长列表或大表格渲染量明显影响性能"],
+      "whenNotToUse": ["数据量小且原生列表足够", "分页或服务端查询可以解决性能问题"],
+      "accessibility": "verify-focus-scroll-semantic-order",
+      "performance": "high-leverage",
+      "brandRule": "虚拟化不能破坏键盘焦点、行语义和移动端扫描",
+      "fallback": "分页、分段加载或原生列表"
+    },
+    {
+      "id": "state",
+      "task": "shared-client-state",
+      "name": "Zustand",
+      "supportedStacks": ["react"],
+      "licenseClass": "permissive",
+      "whenToUse": ["多个组件共享且需要持久化或订阅的客户端状态"],
+      "whenNotToUse": ["局部状态可以由 useState/useReducer 管理", "服务端状态应由数据获取层管理"],
+      "accessibility": "not-applicable",
+      "performance": "light",
+      "brandRule": "状态模型必须保留加载、错误、恢复和不可逆操作状态",
+      "fallback": "React useState、useReducer 或项目现有状态层"
+    },
+    {
+      "id": "style-variants",
+      "task": "conditional-classnames-variants",
+      "name": "clsx + cva",
+      "supportedStacks": ["react", "vue", "vanilla"],
+      "licenseClass": "permissive",
+      "whenToUse": ["条件 className 简单组合使用 clsx", "组件存在稳定的 size、intent、state 变体时使用 cva"],
+      "whenNotToUse": ["只有一个静态 className", "为了少量条件判断新增复杂抽象"],
+      "accessibility": "not-applicable",
+      "performance": "light",
+      "brandRule": "变体映射到 OneSeven Token，不复制第三方组件主题",
+      "fallback": "原生 className 拼接或项目已有样式工具"
+    }
+  ]
+}

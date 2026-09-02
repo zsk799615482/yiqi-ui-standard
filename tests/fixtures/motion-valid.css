@@ -1,0 +1,17 @@
+:root {
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --duration-press: 160ms;
+}
+
+.popover {
+  transform-origin: var(--transform-origin);
+  transition: transform 200ms var(--ease-out-strong), opacity 200ms var(--ease-out-strong);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .card:hover { transform: translateY(-2px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popover { transition: opacity 120ms ease-out; transform: none; }
+}

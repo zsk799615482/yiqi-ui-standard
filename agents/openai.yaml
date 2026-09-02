@@ -1,4 +1,4 @@
 interface:
   display_name: "Yiqi UI Standard"
-  short_description: "快速帮助开发人员建立、应用和检查统一的 UI 规范"
-  default_prompt: "使用 $yiqi-ui-standard 快速统一这个项目的 UI 规范并完成必要检查。"
+  short_description: "快速帮助开发人员建立、应用和检查统一的 UI 规范，按需启用 OneSeven 展示模式高级组件与动效"
+  default_prompt: "使用 $yiqi-ui-standard 统一 OneSeven UI；OneSeven 默认使用展示模式，只有我明确要求效率优先、普通后台或标准模式时才切换。"

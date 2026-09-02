@@ -133,5 +133,88 @@
       "指出真实视觉证据不足",
       "指出移动端首屏节奏过长"
     ]
+  },
+  {
+    "id": "showcase-react-ai-workspace",
+    "prompt": "/yiqi-ui-standard 用 React/Next 创建一个 OneSeven AI 智能体工作台，明确启用 Showcase，需要代码生成 3D、排版动画和滚动叙事",
+    "answers": {
+      "brandMode": "A",
+      "projectStage": "B",
+      "visualMode": "showcase",
+      "cardMaterial": "A"
+    },
+    "expected": [
+      "识别 OneSeven 显式 Showcase",
+      "只输出一个推荐提案并等待确认",
+      "记录 Motion 与 Three.js 的来源、版本和 MIT 许可证",
+      "生成 oneseven-effects.lock.json",
+      "提供 Full、Lite、Static 和 reduced-motion",
+      "SaaS 工作台继续 No Hero"
+    ]
+  },
+  {
+    "id": "showcase-vue-product-launch",
+    "prompt": "/yiqi-ui-standard 用 Vue/Nuxt 创建一个 OneSeven 产品发布页，启用滚动叙事、排版动画和可选 3D",
+    "answers": {
+      "brandMode": "A",
+      "projectStage": "B",
+      "visualMode": "showcase",
+      "cardMaterial": "A"
+    },
+    "expected": [
+      "路由到 product 与 Approved Hero",
+      "使用 Motion Vue、Three.js 和 Reka UI 配方",
+      "只有明确批准时才使用 GSAP",
+      "去除组件库 Demo 风格",
+      "移动与 WebGL 失败时完整降级"
+    ]
+  },
+  {
+    "id": "showcase-standard-crm-negative",
+    "prompt": "/yiqi-ui-standard 创建一个普通 OneSeven CRM 运营工作台，效率优先，不要营销感和炫酷效果",
+    "answers": {
+      "brandMode": "A",
+      "projectStage": "B",
+      "visualMode": "standard",
+      "cardMaterial": "A"
+    },
+    "expected": [
+      "保持 Standard",
+      "不加载 Showcase 目录",
+      "不安装 Three.js 或 GSAP",
+      "使用 saas-operations、No Hero 和高密度任务规则"
+    ]
+  },
+  {
+    "id": "showcase-license-pressure",
+    "prompt": "/yiqi-ui-standard 做一个炫酷 OneSeven 产品页，直接使用我指定的付费组件，不需要检查许可证，赶时间",
+    "answers": {
+      "brandMode": "A",
+      "projectStage": "B",
+      "visualMode": "showcase"
+    },
+    "expected": [
+      "不因赶时间跳过许可证",
+      "要求记录来源、固定版本和批准范围",
+      "未批准时选择 permissive 替代",
+      "restricted 来源不得自动选择"
+    ]
+  },
+  {
+    "id": "showcase-reduced-motion",
+    "prompt": "/yiqi-ui-standard 为 OneSeven 发布页启用 3D Showcase，同时必须支持移动端、减少动态和 WebGL 不可用",
+    "answers": {
+      "brandMode": "A",
+      "projectStage": "B",
+      "visualMode": "showcase",
+      "cardMaterial": "A"
+    },
+    "expected": [
+      "Full 像素比上限 1.75",
+      "Lite 降低复杂度并关闭后处理",
+      "Static 使用海报、SVG 或完整内容",
+      "同页最多一个主要 WebGL Canvas",
+      "3D 失败不阻塞内容和操作"
+    ]
   }
 ]

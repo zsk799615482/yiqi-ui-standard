@@ -472,7 +472,8 @@ const createIssue = (code, message, severity = 'error') => ({
 });
 
 export const analyzeHtml = (html, options = {}) => {
-  const document = parseDocument(String(html));
+  const htmlSource = String(html);
+  const document = parseDocument(htmlSource);
   const { elements, htmlAttributes, styleSource } = document;
   const blocks = collectCssBlocks(styleSource);
   const issues = [];
@@ -492,6 +493,13 @@ export const analyzeHtml = (html, options = {}) => {
     : metadataPageType || 'marketing';
   const hero = htmlAttributes.get('data-ui-hero');
   const cardMaterial = htmlAttributes.get('data-ui-card-material');
+  const brand = htmlAttributes.get('data-ui-brand');
+  const visualMode =
+    htmlAttributes.get('data-ui-visual-mode') ||
+    (brand === 'oneseven' ? 'showcase' : 'standard');
+  const motionTierPolicy = htmlAttributes.get('data-ui-motion-tier-policy');
+  const isShowcase = visualMode === 'showcase';
+  const effectsLock = options.effectsLock;
   const isSaas = SAAS_TYPES.has(pageType);
   const heroEvidence = hasHeroEvidence(elements);
   const cards = elements.filter(({ isCard }) => isCard);
@@ -524,6 +532,34 @@ export const analyzeHtml = (html, options = {}) => {
       'hero-metadata-required',
       'html 元素必须声明 data-ui-hero。',
     );
+  }
+
+  if (!['standard', 'showcase'].includes(visualMode)) {
+    addIssue(
+      'visual-mode-invalid',
+      `视觉模式 ${visualMode} 只允许标准模式或展示模式。`,
+    );
+  }
+
+  if (isShowcase) {
+    if (brand !== 'oneseven') {
+      addIssue(
+        'showcase-brand-required',
+        '展示模式只允许 OneSeven 页面，并必须声明 data-ui-brand="oneseven"。',
+      );
+    }
+    if (motionTierPolicy !== 'adaptive') {
+      addIssue(
+        'showcase-tier-policy-required',
+        '展示模式必须声明 data-ui-motion-tier-policy="adaptive"。',
+      );
+    }
+    if (!effectsLock) {
+      addIssue(
+        'showcase-effects-lock-required',
+        '展示模式必须提供 oneseven-effects.lock.json。',
+      );
+    }
   }
 
   if (hasLinkedStylesheet) {
@@ -727,9 +763,132 @@ export const analyzeHtml = (html, options = {}) => {
     );
   }
 
+  const effectElements = elements.filter(({ attributes }) =>
+    attributes.has('data-ui-effect-id'),
+  );
+  const lockedEntries = Array.isArray(effectsLock?.selected)
+    ? effectsLock.selected
+    : [];
+  const lockedIds = new Set(lockedEntries.map(({ id }) => id));
+
+  if (isShowcase && effectsLock) {
+    const lockIsValid =
+      effectsLock.schemaVersion === 1 &&
+      typeof effectsLock.catalogSnapshot === 'string' &&
+      effectsLock.catalogSnapshot.length > 0 &&
+      Array.isArray(effectsLock.selected) &&
+      effectsLock.selected.length > 0 &&
+      lockedEntries.every(
+        (entry) =>
+          typeof entry.id === 'string' &&
+          typeof entry.sourceUrl === 'string' &&
+          typeof entry.sourceVersion === 'string' &&
+          typeof entry.license === 'string' &&
+          ['permissive', 'conditional', 'restricted'].includes(entry.licenseClass) &&
+          entry.tiers &&
+          ['full', 'lite', 'static'].every(
+            (tier) => typeof entry.tiers[tier] === 'string' && entry.tiers[tier].length > 0,
+          ) &&
+          typeof entry.reducedMotionFallback === 'string' &&
+          entry.reducedMotionFallback.length > 0,
+      );
+    if (!lockIsValid) {
+      addIssue(
+        'showcase-effects-lock-invalid',
+        'Showcase 效果锁文件缺少来源、版本、许可证或 Full / Lite / Static 契约。',
+      );
+    }
+
+    if (
+      lockedEntries.some(
+        (entry) =>
+          entry.licenseClass === 'restricted' ||
+          (entry.licenseClass === 'conditional' &&
+            entry.approval?.status !== 'approved'),
+      )
+    ) {
+      addIssue(
+        'showcase-license-approval-required',
+        '条件或受限许可证没有有效批准记录，不能用于当前 Showcase。',
+      );
+    }
+  }
+
+  if (isShowcase) {
+    if (!hasMediaFeature(blocks, 'prefers-reduced-motion', 'reduce')) {
+      addIssue(
+        'showcase-reduced-motion-required',
+        'Showcase 必须提供 prefers-reduced-motion: reduce 的 Static 回退。',
+        cssMissingSeverity,
+      );
+    }
+
+    for (const { attributes } of effectElements) {
+      const effectId = attributes.get('data-ui-effect-id') ?? '';
+      const sourceId = attributes.get('data-ui-effect-source') ?? '';
+      const fallback = attributes.get('data-ui-effect-fallback') ?? '';
+      if (!sourceId) {
+        addIssue(
+          'showcase-effect-source-required',
+          '每个 Showcase 效果必须声明 data-ui-effect-source。',
+        );
+      }
+      if (fallback !== 'static') {
+        addIssue(
+          'showcase-effect-fallback-required',
+          '每个 Showcase 效果必须声明 data-ui-effect-fallback="static"。',
+        );
+      }
+      if (
+        effectsLock &&
+        !lockedIds.has(sourceId) &&
+        !lockedIds.has(effectId)
+      ) {
+        addIssue(
+          'showcase-effect-not-locked',
+          `Showcase 效果 ${effectId || '未命名'} 没有出现在效果锁文件中。`,
+        );
+      }
+    }
+
+    const webglEffects = effectElements.filter(
+      ({ attributes }) =>
+        attributes.get('data-ui-effect-runtime') === 'webgl',
+    );
+    if (webglEffects.length > 1) {
+      addIssue(
+        'showcase-webgl-limit',
+        '同一页面最多允许一个主要 WebGL Showcase 场景。',
+      );
+    }
+
+    const visibleSource = htmlSource
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/<style\b[\s\S]*?<\/style>/gi, '')
+      .replace(/<script\b[\s\S]*?<\/script>/gi, '');
+    if (/magic\s*ui|aceternity|react\s*bits|linear\s+inspired|raycast\s+inspired/i.test(visibleSource)) {
+      addIssue(
+        'showcase-vendor-demo-residue',
+        'Showcase 页面仍保留供应商名称、Demo 文案或外部产品复刻标识。',
+      );
+    }
+  } else {
+    const importsShowcaseDependency =
+      /(?:from\s*['"](?:three|gsap|liquid-glass-react|@wxperia\/liquid-glass-vue|liquid-glass)(?:\/[^'"]*)?['"]|import\s*\(\s*['"](?:three|gsap|liquid-glass-react|@wxperia\/liquid-glass-vue|liquid-glass)(?:\/[^'"]*)?['"]\s*\)|src\s*=\s*['"][^'"]*(?:three(?:\.min)?\.js|gsap(?:\.min)?\.js|liquid-glass(?:\.min)?\.js)[^'"]*['"])/i.test(
+        htmlSource,
+      );
+    if (importsShowcaseDependency) {
+      addIssue(
+        'showcase-dependency-forbidden',
+        'Standard 页面不得加载 Three.js、GSAP 或 Liquid Glass 专用 Showcase 依赖。',
+      );
+    }
+  }
+
   return {
     ok: !issues.some(({ severity }) => severity === 'error'),
     pageType,
+    visualMode,
     issues,
   };
 };
@@ -745,12 +904,20 @@ const parseArguments = (args) => {
       continue;
     }
 
-    if (argument === '--file' || argument === '--page-type') {
+    if (
+      argument === '--file' ||
+      argument === '--page-type' ||
+      argument === '--effects-lock'
+    ) {
       const value = args[index + 1];
       if (!value || value.startsWith('--')) {
         throw new Error(`参数 ${argument} 缺少值。`);
       }
-      const key = argument === '--file' ? 'file' : 'pageType';
+      const key = argument === '--file'
+        ? 'file'
+        : argument === '--page-type'
+          ? 'pageType'
+          : 'effectsLock';
       options[key] = value;
       index += 1;
       continue;
@@ -770,6 +937,7 @@ const main = async () => {
   const options = parseArguments(process.argv.slice(2));
   const filePath = resolve(options.file);
   let html;
+  let effectsLock;
 
   try {
     html = await readFile(filePath, 'utf8');
@@ -778,7 +946,20 @@ const main = async () => {
       `无法读取文件：${filePath}。请确认文件路径存在且具有读取权限。`,
     );
   }
-  const report = analyzeHtml(html, { pageType: options.pageType });
+  if (options.effectsLock) {
+    const effectsLockPath = resolve(options.effectsLock);
+    try {
+      effectsLock = JSON.parse(await readFile(effectsLockPath, 'utf8'));
+    } catch {
+      throw new Error(
+        `无法读取效果锁文件：${effectsLockPath}。请确认文件存在且为有效 JSON。`,
+      );
+    }
+  }
+  const report = analyzeHtml(html, {
+    pageType: options.pageType,
+    effectsLock,
+  });
 
   if (options.json) {
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);

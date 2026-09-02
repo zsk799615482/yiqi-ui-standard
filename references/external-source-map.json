@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "reviewPolicy": {
+    "cadenceMonths": 6,
+    "runtimeDependency": false,
+    "licenseRequired": true,
+    "conflictPrecedence": [
+      "安全性与可访问性",
+      "用户明确要求",
+      "项目现有设计系统与依赖",
+      "Yiqi / OneSeven 规则",
+      "产品类型与页面任务",
+      "Emil / Apple 通用建议",
+      "第三方库默认行为"
+    ]
+  },
+  "sources": [
+    {
+      "source": "emilkowalski/skills",
+      "url": "https://github.com/emilkowalski/skills",
+      "commit": "d23d7f8",
+      "license": "MIT",
+      "reviewed": "2026-09-02",
+      "nextReview": "2027-03-02",
+      "integration": "reference-internalized",
+      "internalized": [
+        "emil-design-eng: motion decision, easing, duration, component craft",
+        "animate: construction gate and implementation order",
+        "review-animations: strict motion review criteria",
+        "improve-animations: Recon → Audit → Vet → Plan",
+        "find-animation-opportunities: restraint and opportunity gate",
+        "apple-design: fluid interaction principles",
+        "pick-ui-library: task-first dependency selection"
+      ],
+      "excluded": [
+        "animate-expo: current Yiqi scope is not native Expo",
+        "write-swift: current Yiqi scope is not native Swift",
+        "ask-sonner: component-specific reference only",
+        "fixed third-party library list as a mandatory standard",
+        "external skill files as runtime dependencies"
+      ],
+      "notes": "Yiqi documents and catalogs are the authoritative adaptation; upstream advice never overrides project constraints."
+    },
+    {
+      "source": "WatermelonCorp/watermelon-platform",
+      "url": "https://github.com/WatermelonCorp/watermelon-platform",
+      "commit": "f228cc6",
+      "license": "MIT",
+      "reviewed": "2026-09-02",
+      "nextReview": "2027-03-02",
+      "integration": "discovery-index-only",
+      "internalized": ["component and block discovery metadata", "file-based content organization"],
+      "excluded": ["full platform runtime", "MCP server and remote endpoint", "Cloudflare Worker and deployment", "analytics and site shell", "unverified third-party content"],
+      "notes": "Only selective component metadata or source recipes may be audited and adapted."
+    },
+    {
+      "source": "Jakubantalik/Libraries",
+      "url": "https://github.com/Jakubantalik/Libraries",
+      "commit": "3862ffa",
+      "license": "MIT",
+      "reviewed": "2026-09-02",
+      "nextReview": "2027-03-02",
+      "integration": "catalog-selective",
+      "internalized": ["border-beam@1.4.0", "liquid-gooey@0.2.1", "thinking-orbs@0.3.1"],
+      "excluded": ["native ports outside current Web-first scope", "demo sites and vendor layouts"],
+      "notes": "Border Beam and Liquid Gooey are Showcase effects; Thinking Orbs is an AI state component and must not be paired with AICSS Thinking State."
+    },
+    {
+      "source": "kvnkld/aicss",
+      "url": "https://github.com/kvnkld/aicss",
+      "commit": "4556a91",
+      "license": "MIT",
+      "reviewed": "2026-09-02",
+      "nextReview": "2027-03-02",
+      "integration": "ai-component-catalog-free-only",
+      "internalized": ["free React AI conversation components", "self-contained CSS component packaging"],
+      "excluded": ["Pro components", "AICSS_TOKEN handling", "account or entitlement services"],
+      "notes": "MIT applies to the public repository and free package scope; Pro component access is not an automatic Yiqi capability."
+    },
+    {
+      "source": "beautifului.dev",
+      "url": "https://www.beautifului.dev/",
+      "commit": null,
+      "license": "MIT",
+      "reviewed": "2026-09-02",
+      "nextReview": "2027-03-02",
+      "integration": "ai-component-catalog-source-recipe",
+      "internalized": ["Prompt, Context, Tool, Task and Diff workbench recipes"],
+      "excluded": ["default foundation styles", "vendor demo pages and copy", "commercial icon dependency"],
+      "notes": "Website source is tracked as a dated reference snapshot until a stable repository commit is available."
+    }
+  ]
+}

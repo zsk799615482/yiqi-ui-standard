@@ -490,11 +490,11 @@ test('SaaS reference includes all approved workbench shells', async () => {
   );
 });
 
-test('v2 tokens are dark-first and include role typography', async () => {
+test('v2 visual tokens remain dark-first under v3', async () => {
   const tokens = JSON.parse(await read('design-tokens.json'));
   const serializedTokens = JSON.stringify(tokens);
 
-  assert.equal(tokens.meta.version, '2.0.0');
+  assert.equal(tokens.meta.version, '3.2.0');
   assert.equal(tokens.theme.default, 'dark');
   assert.equal(tokens.theme.lightGeneratedOnlyWhenRequested, true);
   assert.equal(tokens.darkColors.surfaceElevated, '#1B1B20');
@@ -979,13 +979,13 @@ test('review and platform guidance use the v2 quality contract', async () => {
   assert.match(platform, /Playwright 桌面\/移动验收/);
 });
 
-test('release metadata and pressure cases cover v2 behavior', async () => {
+test('release metadata keeps v2 behavior covered under v3', async () => {
   const version = (await read('VERSION')).trim();
   const tokens = JSON.parse(await read('design-tokens.json'));
   const cases = JSON.parse(await read('tests/evals/yiqi-ui-standard-v2-cases.json'));
   const readme = await read('README.md');
 
-  assert.equal(version, '2.0.0');
+  assert.equal(version, '3.2.0');
   assert.equal(tokens.meta.version, version);
   assert.ok(cases.length >= 9);
 
@@ -1011,4 +1011,98 @@ test('release metadata and pressure cases cover v2 behavior', async () => {
   assert.match(readme, /非 px 单位或长度计算/);
   assert.match(readme, /字体加载/);
   assert.match(readme, /视觉质量/);
+});
+
+test('v3 defaults OneSeven to showcase and preserves explicit standard mode', async () => {
+  const skill = await read('SKILL.md');
+  const showcase = await read('references/showcase-mode.md');
+
+  assert.match(skill, /第 1\.5 步：视觉模式/);
+  assert.match(skill, /standard/);
+  assert.match(skill, /showcase/);
+  assert.match(skill, /OneSeven[\s\S]*默认/);
+  assert.match(skill, /效率优先、普通后台/);
+  assert.match(skill, /高级组件|液态玻璃|空间交互|排版动画|滚动编排/);
+  assert.match(skill, /references\/showcase-mode\.md/);
+  assert.match(skill, /标准模式不得加载展示模式/);
+
+  assert.match(showcase, /## 默认与切换条件/);
+  assert.match(showcase, /## 单一推荐提案契约/);
+  assert.match(showcase, /视觉目标与内容依据/);
+  assert.match(showcase, /OneSeven 品牌改造/);
+  assert.match(showcase, /Full/);
+  assert.match(showcase, /Lite/);
+  assert.match(showcase, /Static/);
+  assert.match(showcase, /用户确认[\s\S]*完整实现/);
+  assert.match(showcase, /每个路由最多一个主要 3D 场景/);
+  assert.match(showcase, /紫色 Aurora|发光球体|无信息粒子/);
+});
+
+test('v3 documentation exposes catalog, resolver and adaptive quality gate', async () => {
+  const readme = await read('README.md');
+  const gate = await read('references/generation-quality-gate.md');
+  const platform = await read('references/platform-implementations.md');
+
+  assert.match(readme, /展示模式/);
+  assert.match(readme, /resolve-showcase-components\.mjs/);
+  assert.match(readme, /oneseven-effects\.lock\.json/);
+  assert.match(readme, /React \/ Next/);
+  assert.match(readme, /Vue \/ Nuxt/);
+  assert.match(readme, /原生 Web/);
+
+  assert.match(gate, /data-ui-visual-mode="showcase"/);
+  assert.match(gate, /data-ui-motion-tier-policy="adaptive"/);
+  assert.match(gate, /data-ui-effect-id/);
+  assert.match(gate, /data-ui-effect-source/);
+  assert.match(gate, /effects-lock/);
+  assert.match(gate, /最多一个[\s\S]*WebGL/);
+  assert.match(gate, /prefers-reduced-motion/);
+  assert.match(platform, /展示模式 Web 多栈/);
+  assert.match(platform, /React \/ Next/);
+  assert.match(platform, /Vue \/ Nuxt/);
+  assert.match(platform, /Vanilla/);
+});
+
+test('release metadata and eval cases cover v3 showcase behavior', async () => {
+  const version = (await read('VERSION')).trim();
+  const tokens = JSON.parse(await read('design-tokens.json'));
+  const cases = JSON.parse(await read('tests/evals/yiqi-ui-standard-v2-cases.json'));
+  const agentMetadata = await read('agents/openai.yaml');
+
+  assert.equal(version, '3.2.0');
+  assert.equal(tokens.meta.version, version);
+
+  const ids = new Set(cases.map((entry) => entry.id));
+  for (const id of [
+    'showcase-react-ai-workspace',
+    'showcase-vue-product-launch',
+    'showcase-standard-crm-negative',
+    'showcase-license-pressure',
+    'showcase-reduced-motion',
+  ]) {
+    assert.ok(ids.has(id), `missing v3 eval: ${id}`);
+  }
+
+  assert.match(agentMetadata, /OneSeven/);
+  assert.match(agentMetadata, /Showcase|高级组件|动效/);
+});
+
+test('reference integration exposes canonical motion, library and source governance layers', async () => {
+  const skill = await read('SKILL.md');
+  const motion = await read('references/animation-craft.md');
+  const library = await read('references/library-selection.md');
+  const sourceMap = JSON.parse(await read('references/external-source-map.json'));
+  const catalog = JSON.parse(await read('references/library-catalog.json'));
+
+  assert.match(skill, /第 5 步：依赖选择/);
+  assert.match(skill, /不得自动安装、升级或替换依赖/);
+  assert.match(skill, /animation-craft\.md/);
+  assert.match(motion, /动效单一事实来源/);
+  assert.match(motion, /prefers-reduced-motion/);
+  assert.match(motion, /yiqi-motion: allow/);
+  assert.match(library, /项目已有等价依赖时，不主动迁移/);
+  assert.match(library, /只给一个首选方案/);
+  assert.equal(sourceMap.sources[0].commit, 'd23d7f8');
+  assert.equal(sourceMap.sources[0].license, 'MIT');
+  assert.equal(catalog.policy.automaticInstall, false);
 });

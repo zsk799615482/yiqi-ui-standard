@@ -1,0 +1,11 @@
+.popover {
+  transition: all 500ms ease-in;
+  transform-origin: center;
+}
+
+.enter { animation: pop 400ms ease-in; transform: scale(0); }
+.panel { transition: top 350ms ease-out; }
+.button:hover { transform: scale(1.02); }
+
+/* yiqi-motion: allow duration reason="marketing narrative" */
+.story { animation-duration: 800ms; }

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "snapshotDate": "2026-09-02",
+  "policy": {
+    "discoveryOnly": true,
+    "runtimeDependency": false,
+    "wholePlatformImport": false,
+    "selectiveSourceExtraction": true
+  },
+  "sources": [
+    {
+      "id": "watermelon-platform",
+      "name": "Watermelon Platform",
+      "sourceUrl": "https://github.com/WatermelonCorp/watermelon-platform",
+      "sourceVersion": "git@f228cc64b7ba05b3db576032efe0e6b7a7524934",
+      "license": "MIT",
+      "licenseClass": "permissive",
+      "integration": "discovery-index",
+      "allowedPaths": ["src/data/contents/animated-components", "src/data/contents/registry", "src/data/contents/blocks", "src/data/contents/dashboards", "src/data/contents/templates"],
+      "forbiddenPaths": ["mcp", "worker", "wrangler.toml", "wrangler.mcp.toml", "scripts/generate-mcp-catalog.ts", "src/App.tsx", "src/index.css", ".env.example", "public/openapi.json"],
+      "recommendedContexts": ["saas-ai-workspace", "marketing", "product"],
+      "notes": "只读取组件、区块和模板的元数据或单个源码配方；不引入完整站点、MCP、Worker、部署、分析和远程服务。",
+      "verificationSteps": ["逐项确认文件许可证和第三方依赖", "移除 Watermelon Logo、字体、文案和页面布局", "将源码映射到 OneSeven Token 后再进入业务项目"]
+    }
+  ]
+}

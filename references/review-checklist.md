@@ -49,6 +49,39 @@
 - `prefers-reduced-motion` 和减少透明支持
 - 字体文件是否真实加载并使用正确字重
 
+### 动效与交互质量（基于 Emil Kowalski + Apple Design）
+
+**🔴 强制修复（阻塞问题）：**
+
+| 检查项 | 错误示例 | 修复目标 | 原因 |
+|---|---|---|---|
+| UI 元素使用 ease-in | `transition: transform 300ms ease-in` | `transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1)` | ease-in 启动缓慢，界面感觉迟钝 |
+| 入场动画从 scale(0) | `@starting-style { transform: scale(0); }` | `transform: scale(0.95); opacity: 0;` | 真实世界无物从虚无出现 |
+| 使用 transition: all | `transition: all 300ms` | 指定具体属性：`transform, opacity` | 触发不必要重排，性能差 |
+| 键盘操作有动画 | 命令面板切换有 300ms 淡入 | 完全移除动画 | 高频操作，动画累积浪费时间 |
+| UI 元素时长超过 300ms | `transition: transform 500ms` | 按钮 160ms，弹层 200ms，模态 350ms | 超过 300ms 感觉迟缓 |
+| 缺失 prefers-reduced-motion | 大幅位移无降级 | 改为短 crossfade 或移除位移 | 可访问性强制要求 |
+
+**🟡 推荐修复（体验优化）：**
+
+| 检查项 | 当前状态 | 改进方向 | 原因 |
+|---|---|---|---|
+| 弹出层从中心缩放 | `transform-origin: center` | 锚定到触发点（模态除外） | 空间一致性，显示元素关系 |
+| 按钮无 :active 状态 | 点击无反馈 | 添加 `scale(0.97)` 160ms | 确认界面收到指令 |
+| 工具提示无即时模式 | 每次都延迟 200ms | 首次延迟，后续立即 + 无动画 | 感知性能优化 |
+| 非 GPU 加速属性 | `transition: top 200ms` | 改为 `transform: translateY()` | 避免重排，性能优化 |
+| 动态 UI 使用 keyframes | Toast 进入用 @keyframes | 改为 CSS transitions | keyframes 不可中断 |
+
+**🟢 参考建议（可选优化）：**
+
+| 检查项 | 当前状态 | 改进方向 | 原因 |
+|---|---|---|---|
+| 列表元素同时出现 | opacity 0→1 无延迟 | 添加 stagger（30-80ms） | 视觉层次感 |
+| 过渡不够平滑 | 状态切换有跳变感 | 过渡中添加 `filter: blur(2px)` | 掩盖不完美的过渡 |
+| 缺少悬停反馈 | 卡片悬停无变化 | 添加 `translateY(-2px)` 或明度变化 | 可交互性提示 |
+
+完整动效规范和具体数值见 `animation-craft.md`；本节只保留审查报告所需的 Yiqi 分级与输出格式。
+
 ## 输出格式
 
 ```markdown
@@ -64,7 +97,23 @@
 | 位置 | 当前状态 | 建议改成 | 原因 |
 
 ### Apple Design 参考
+
 只列适用的设计判断，不把 Apple 外观当作强制模板。
+
+**流体交互原则（适用于展示模式）：**
+- 响应性：按钮 pointer-down 立即反馈，不等 click
+- 1:1 跟踪：拖拽元素粘在手指/鼠标，记录抓取偏移
+- 可中断性：动画可随时反向，不锁定输入
+- 速度交接：手势释放后动画继承手指速度
+- 动量投影：根据速度预测落点，不只看位置
+
+**材质与深度（适用于液态玻璃）：**
+- 玻璃材质必须有背景内容穿透（`backdrop-filter: blur()`）
+- 大表面用强模糊（20px+）+ 深阴影
+- 小控件用轻模糊（8-12px）+ 浅阴影
+- 禁止浅玻璃叠浅玻璃（可读性崩溃）
+
+Apple 流体交互原则的统一来源见 `animation-craft.md`。
 
 ### 做得好的地方
 说明已经形成的有效规律。

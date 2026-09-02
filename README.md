@@ -1,8 +1,8 @@
 # Yiqi UI Standard
 
-**当前版本：** `2.0.0`
+**当前版本：** `3.2.0`
 
-`yiqi-ui-standard` 是一个快速帮助开发人员统一 UI 规范的决策型 Skill，覆盖 UI 规划、代码生成和已有页面审查。它以 OneSeven / 壹柒研究所品牌规范为默认基线，通过产品画像、页面级路由、Design Tokens、静态校验和桌面/移动浏览器验收，控制生成结果的一致性与实际可用性。
+`yiqi-ui-standard` 是一个快速帮助开发人员统一 UI 规范的决策型 Skill，覆盖 UI 规划、代码生成和已有页面审查。它以 OneSeven / 壹柒研究所品牌规范为默认基线，通过产品画像、页面级路由、Design Tokens、静态校验和桌面/移动浏览器验收，控制生成结果的一致性与实际可用性。v3 新增 OneSeven 展示模式，作为 OneSeven 品牌的默认视觉模式，用于可审计地取用高级组件、代码生成 3D、排版动画与滚动叙事；明确效率优先或普通后台需求时可切换为标准模式。动效与依赖选择参考 Emil Kowalski 的方法，但不直接安装或复制外部 skills。
 
 它不是一套要求所有产品复制相同组件的 UI 模板。共享硬边界负责维持品牌关联，产品类型、页面任务、信息密度和操作风险负责决定具体布局。
 
@@ -10,10 +10,12 @@
 
 - 为新产品建立完整 UI 需求规范
 - 按 OneSeven 品牌方向生成页面或组件
+- OneSeven 默认生成展示模式；明确要求效率优先、普通后台或不需要高级效果时切换为标准模式
 - 在现有项目设计系统内继续实现
 - 审查已有页面的品牌一致性、可用性和响应式质量
 - 从代表性代码中提取设计规律
 - 通过访谈建立新的品牌规范
+- 按具体功能选择或拒绝通用工程依赖
 
 ## 快速开始
 
@@ -41,6 +43,7 @@ rsync -a yiqi-ui-standard/ "$HOME/.claude/skills/yiqi-ui-standard/"
 ```text
 使用 yiqi-ui-standard 规划一个 AI 商业平台
 使用 yiqi-ui-standard 生成一个 OneSeven 产品官网
+使用 yiqi-ui-standard 为 OneSeven AI 工作台启用展示模式，加入代码生成 3D 和排版动画
 使用 yiqi-ui-standard 审查 src/pages/dashboard.tsx
 使用 yiqi-ui-standard 从现有组件提取设计规范
 ```
@@ -59,6 +62,7 @@ rsync -a yiqi-ui-standard/ "$HOME/.claude/skills/yiqi-ui-standard/"
 |---|---|---|
 | 0 | 品牌模式 | OneSeven（默认）/ 当前项目设计系统 / 新品牌规范 |
 | 1 | 项目阶段 | 规划与需求 / 代码实现 / 已有页面审查或改进 |
+| 1.5 | 视觉模式 | OneSeven 展示模式（默认）/ 标准模式（明确切换） |
 | 2 | 产品画像 | 1 个主类型、0–3 个次类型、当前页面级类型 |
 | 3 | 页面结构 | 根据主要任务和页面类型选择 Hero / No Hero |
 | 4 | SaaS 壳层 | 运营管理型 / AI 创作型 / 数据分析型 |
@@ -86,6 +90,7 @@ rsync -a yiqi-ui-standard/ "$HOME/.claude/skills/yiqi-ui-standard/"
 
 - 优先读取已批准的 UI 需求规范
 - 确认产品画像、页面任务、Hero / No Hero、卡片材质、技术栈和平台
+- 展示模式先输出一个推荐提案；确认后运行目录解析器并生成效果锁文件
 - Web 页面写入质量门槛所需的根元素元数据
 - 运行轻量静态校验
 - 完成 `1440 × 1000` 和 `390 × 844` 浏览器验收
@@ -133,7 +138,32 @@ SaaS、AI 持续操作、管理、分析和账户页面默认使用 No Hero。�
 - Hero 必须使用真实媒体、可检查的产品状态，或包含实际成果与证据的编辑式构图
 - 动效必须可理解、可中断，并尊重 `prefers-reduced-motion`
 
-完整规则分别位于 `references/oneseven-guidance.md`、`references/visual-system.md`、`references/hero-standards.md` 和 `references/motion-standards.md`。
+完整规则分别位于 `references/oneseven-guidance.md`、`references/visual-system.md`、`references/hero-standards.md`、`references/motion-standards.md` 和 `references/animation-craft.md`。通用工程库选择位于 `references/library-selection.md`；高级视觉来源仍由 `references/showcase-catalog.json` 管理。
+
+## OneSeven 展示模式
+
+展示模式是 OneSeven 默认视觉风格。品牌模式为 OneSeven 时默认进入展示模式；用户明确要求效率优先、普通 CRM、管理后台、数据任务或不需要高级视觉效果时，切换为标准模式。
+
+展示模式的固定流程：
+
+1. 用真实内容判断高级效果是否必要。
+2. 确认 React / Next、Vue / Nuxt 或原生 Web。
+3. 普通工程依赖读取 `references/library-catalog.json`；高级视觉效果读取 `references/showcase-catalog.json`。
+4. 输出一个推荐提案，说明品牌改造、依赖、授权与 Full / Lite / Static。
+5. 用户确认后运行解析器并生成 `oneseven-effects.lock.json`。
+6. 完成静态、桌面、移动、reduced-motion 和 WebGL 失败验收。
+
+```bash
+node scripts/resolve-showcase-components.mjs \
+  --stack react \
+  --page-type saas-ai-workspace \
+  --effects 3d,typography,scroll \
+  --output oneseven-effects.lock.json
+```
+
+首批 Showcase 核心候选包括 Motion、Three.js、Magic UI 源码配方、Reka UI，以及按需启用的 Liquid Glass 专用来源：`liquid-glass-react`（React）、`liquid-glass-vue`（Vue）和 `liquid-glass-vanilla-source`（CSS/SVG 源码配方）。通用工程库由 `references/library-catalog.json` 管理；两类目录不得合并。GSAP / ScrollTrigger 属于条件许可项，只有显式批准并写入锁文件时才能使用。React Bits、Aceternity、付费或许可不明确来源不进入核心自动推荐。
+
+液态玻璃专用来源只提供折射、滤镜和容器行为，不替代 OneSeven 材质规范。必须先确认卡片材质，再通过 `--effects liquid-glass` 解析；React 使用 `liquid-glass-react@1.1.1`，Vue 使用 `@wxperia/liquid-glass-vue@1.0.9`，Vanilla 只复制锁定 commit 的 CSS/SVG 文件。不要安装与 Vanilla 仓库无关的同名 npm `liquid-glass@1.0.0`，也不得保留供应商 999px 圆角、Logo、Demo 文案或全屏 shader。
 
 ## Web 接入
 
@@ -161,10 +191,30 @@ html {
 ```html
 <html
   lang="zh-CN"
+  data-ui-brand="oneseven"
   data-ui-page-type="marketing"
   data-ui-hero="approved"
   data-ui-card-material="solid"
 >
+```
+
+展示模式额外声明：
+
+```html
+<html
+  data-ui-brand="oneseven"
+  data-ui-page-type="product"
+  data-ui-hero="approved"
+  data-ui-visual-mode="showcase"
+  data-ui-motion-tier-policy="adaptive"
+>
+
+<section
+  data-ui-effect-id="spatial-product-orbit"
+  data-ui-effect-source="threejs-core"
+  data-ui-effect-runtime="webgl"
+  data-ui-effect-fallback="static"
+></section>
 ```
 
 Approved Hero 的真实媒体或产品状态需要额外标记：
@@ -199,6 +249,7 @@ node scripts/validate-generated-web.mjs \
 |---|---|
 | `--file <path>` | 必填，待检查的 HTML 文件 |
 | `--page-type <type>` | 可选，覆盖根元素中的页面类型 |
+| `--effects-lock <path>` | 展示模式必填，读取效果来源、版本、许可证和三档回退 |
 | `--json` | 可选，输出结构化 JSON 报告 |
 
 示例：
@@ -247,6 +298,7 @@ export PWCLI="$CODEX_HOME/skills/playwright/scripts/playwright_cli.sh"
 ```bash
 node --test tests/skill-contract.test.mjs
 node --test tests/validate-generated-web.test.mjs
+node --test tests/showcase-catalog.test.mjs
 ```
 
 也可以一次运行全部 Node.js 测试：
@@ -255,7 +307,7 @@ node --test tests/validate-generated-web.test.mjs
 node --test tests/*.test.mjs
 ```
 
-`tests/evals/yiqi-ui-standard-v2-cases.json` 包含规划、官网、移动端、三种 SaaS、复合产品和审查基线等压力用例。
+`tests/evals/yiqi-ui-standard-v2-cases.json` 保留 v2 回归，并增加 React 展示模式、Vue 展示模式、标准模式负例、许可证压力和 reduced-motion 等 v3 压力用例。
 
 ## 文件结构
 
@@ -279,18 +331,33 @@ yiqi-ui-standard/
 │   ├── hero-standards.md
 │   ├── saas-workbench-standards.md
 │   ├── generation-quality-gate.md
+│   ├── showcase-mode.md
+│   ├── showcase-catalog.json
 │   ├── oneseven-guidance.md
 │   ├── visual-system.md
+│   ├── animation-craft.md
 │   ├── motion-standards.md
+│   ├── library-selection.md
+│   ├── library-catalog.json
+│   ├── ai-component-catalog.json
+│   ├── discovery-sources.json
+│   ├── external-source-map.json
 │   ├── platform-implementations.md
 │   ├── review-checklist.md
 │   ├── interview-workflow.md
 │   └── extraction-workflow.md
 ├── scripts/
+│   ├── audit-motion.mjs
+│   ├── resolve-showcase-components.mjs
 │   └── validate-generated-web.mjs
 └── tests/
     ├── evals/yiqi-ui-standard-v2-cases.json
     ├── fixtures/
+    ├── library-catalog.test.mjs
+    ├── motion-audit.test.mjs
+    ├── ai-component-catalog.test.mjs
+    ├── source-boundary.test.mjs
+    ├── showcase-catalog.test.mjs
     ├── skill-contract.test.mjs
     └── validate-generated-web.test.mjs
 ```
@@ -306,9 +373,17 @@ yiqi-ui-standard/
 | `references/hero-standards.md` | Hero / No Hero 路由、证据和标题规则 |
 | `references/saas-workbench-standards.md` | 三类 SaaS 工作台壳层 |
 | `references/generation-quality-gate.md` | Web 元数据、静态校验和浏览器验收 |
+| `references/showcase-mode.md` | OneSeven 展示模式启用、提案、品牌化与三档性能流程 |
+| `references/showcase-catalog.json` | 高级组件、运行时、版本、许可证与跨栈配方目录 |
 | `references/oneseven-guidance.md` | OneSeven 品牌适用范围和品牌硬规则 |
 | `references/visual-system.md` | 颜色、字体、间距、圆角、材质和组件意图 |
 | `references/motion-standards.md` | 反馈、动效、等待状态和无障碍降级 |
+| `references/animation-craft.md` | 动效决策、曲线、时长、流体交互和降级的单一事实来源 |
+| `references/library-selection.md` | 通用工程依赖选择方法、输出契约和 OneSeven 适配 |
+| `references/library-catalog.json` | 按任务和技术栈组织的通用工程库候选目录 |
+| `references/ai-component-catalog.json` | AICSS、Beautiful UI 和 AI 状态组件的任务级来源目录 |
+| `references/discovery-sources.json` | Watermelon 等组件发现来源的允许路径和禁止边界 |
+| `references/external-source-map.json` | 外部参考来源、commit、许可证和复核日期账本 |
 | `references/platform-implementations.md` | Web、小程序和 React Native 等平台实现 |
 | `references/review-checklist.md` | 审查入口、阻塞项和报告格式 |
 | `references/interview-workflow.md` | 从零建立品牌标准的访谈流程 |
@@ -319,7 +394,9 @@ yiqi-ui-standard/
 - 修改版本时同步更新 `VERSION`、`design-tokens.json` 的 `meta.version` 和本 README
 - 修改结构化令牌后同步检查 `theme.css` 的 CSS 变量映射
 - 修改 Skill 契约或参考规则后运行全部 Node.js 测试
+- 参考外部 skills 时只内化方法，来源 commit、许可证和复核日期记录在 `references/external-source-map.json`
+- 更新展示模式目录时核验来源、固定版本、许可证和当前核验日期；现有目录保留 `2026-08-28` 基线快照，新加入的 Liquid Glass 条目记录 `2026-09-02` 核验日期
 - 字体来源、法律声明和 SHA-256 位于 `assets/fonts/FONT-NOTICE.md`
 - `references/` 默认由 Skill 只读；只有提取或引导模式明确需要时才更新
 
-在当前开发工作区中，`yiqi-ui-standard/` 外层的 `index.html` 是故意保留的失败回归基线，用于验证审查流程，不代表符合 v2 规范的示例实现。
+在当前开发工作区中，`yiqi-ui-standard/` 外层的 `index.html` 是故意保留的失败回归基线，用于验证审查流程，不代表符合 v3 规范的示例实现。

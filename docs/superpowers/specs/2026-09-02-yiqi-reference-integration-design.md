@@ -217,7 +217,7 @@ Yiqi 总入口
 - `references/showcase-mode.md`：明确其与通用库选择层的边界。
 - `design-tokens.json`、`theme.css`：补齐语义化 motion tokens。
 - `README.md`：说明参考集成、目录边界和来源治理。
-- `VERSION`：完成验收后从 `3.0.0` 升至 `3.1.0`。
+- `VERSION`：基础参考集成完成后为 `3.1.0`；本次新增 AI 组件与发现来源层后升至 `3.2.0`。
 
 ## 分阶段交付
 

@@ -35,6 +35,17 @@ C. 已有页面审查或改进
 - B 进入实现路由，且已有批准规范必须先读。
 - C 读取 `references/review-checklist.md`。
 
+### 第 1.5 步：视觉模式
+
+品牌模式为 OneSeven 时判断视觉模式：默认使用展示模式；用户明确要求效率优先或普通业务模式时可切换为标准模式。
+
+- `showcase`（展示模式）：OneSeven 默认视觉模式，按需使用高级组件、液态玻璃、空间交互、排版动画和滚动编排。
+- `standard`（标准模式）：用户明确要求效率优先、普通后台、CRM、数据任务或不需要高级视觉效果时启用。
+
+选择当前项目已有设计系统或建立新品牌规范时不得启用 OneSeven 展示模式。规划阶段默认记录展示模式意图，但不询问技术栈、不取用组件；代码实现阶段读取 `references/showcase-mode.md` 和目录，审查阶段仅在页面已声明或明显使用展示模式时读取。
+
+标准模式不得加载展示模式目录、Three.js、GSAP 或其他仅用于高级展示的重型依赖。
+
 ### 第 2 步：产品画像
 
 读取 `references/product-archetypes.md` 作为产品画像依据。规划与需求阶段按 `references/planning-workflow.md` 的访谈顺序，在目标用户和主要任务之后确认产品画像。代码实现和已有页面审查或改进阶段，在进入对应工作前确认产品画像。
@@ -52,6 +63,10 @@ C. 已有页面审查或改进
 当前页面属于运营管理、AI 创作或数据分析时，读取 `references/saas-workbench-standards.md`，选择对应壳层；三类都 No Hero。
 
 规划阶段只记录已批准壳层方向，不生成工作台实现；代码实现/审查阶段在页面主要任务和 Hero 路由后应用壳层。
+
+### 第 5 步：依赖选择（仅代码实现）
+
+确认技术栈后，若页面需要第三方工程能力，读取 `references/library-selection.md` 和 `references/library-catalog.json`。先检查项目已有依赖与原生能力，再给出一个首选方案、许可证/性能/无障碍风险和回退方案；不得自动安装、升级或替换依赖。Showcase 的 Motion、Three.js、Liquid Glass 和 GSAP 仍由 `showcase-catalog.json` 管理。
 
 ## 核心原则
 
@@ -74,6 +89,9 @@ C. 已有页面审查或改进
 5. **审查必须输出 Before/After**  
    每个问题都给出"当前代码 → 应该改成 → 原因"三元组，直接可操作。
 
+6. **依赖先复用后新增**
+   项目已有等价依赖或原生能力足够时，不引入重复库；第三方库只提供行为、算法或运行时，不决定 OneSeven 的视觉身份。
+
 ## 工作流引用
 
 - 规划阶段：`references/planning-workflow.md`
@@ -88,6 +106,13 @@ C. 已有页面审查或改进
 - 从代码提取规范：`references/extraction-workflow.md`
 - 分平台实现指南：`references/platform-implementations.md`
 - OneSeven 品牌指导：`references/oneseven-guidance.md`
+- OneSeven 展示模式组件与动效：`references/showcase-mode.md`
+- 展示模式可审计目录：`references/showcase-catalog.json`
+- 动效单一事实来源：`references/animation-craft.md`
+- 通用工程库选择：`references/library-selection.md`、`references/library-catalog.json`
+- 外部来源账本：`references/external-source-map.json`
+- AI 组件目录：`references/ai-component-catalog.json`
+- 发现来源目录：`references/discovery-sources.json`
 
 ## 代码实现模式
 
@@ -95,11 +120,14 @@ C. 已有页面审查或改进
 2. 读取产品画像、Hero 和对应产品规范
 3. 询问实体暗色或液态玻璃卡片
 4. 确认技术栈和平台
-5. 生成代码
-6. 在 Web 根元素添加 `data-ui-page-type`、`data-ui-hero` 和 `data-ui-card-material`
-7. 运行 `scripts/validate-generated-web.mjs`
-8. 读取 `references/generation-quality-gate.md`，处理静态 error，并完成桌面、移动浏览器验收
-9. 静态 warning 必须在浏览器中复核并记录；未完成静态和视觉验收时，不得宣称完成
+5. 若需要通用工程依赖，先按 `library-selection.md` 做现有依赖、原生能力、许可证、无障碍和性能检查；用户明确要求时才安装或修改依赖
+6. 若页面属于 AI 创作 / 对话工作台，按任务读取 `ai-component-catalog.json`；AICSS、Beautiful UI 和 Thinking Orbs 同一任务只选一个来源，Pro 或商业依赖不得自动取用
+7. 若为展示模式，先运行 `scripts/resolve-showcase-components.mjs`，输出一个推荐提案并等待用户确认；用户选择液态玻璃时使用 `--effects liquid-glass`，按目录中的 React、Vue 或 Vanilla 专用配方取用
+8. 生成代码；展示模式同时生成 `oneseven-effects.lock.json` 和 Full / Lite / Static 三档
+9. 在 Web 根元素添加 `data-ui-page-type`、`data-ui-hero` 和 `data-ui-card-material`；展示模式额外声明品牌、视觉模式和性能策略元数据
+10. 运行 `scripts/validate-generated-web.mjs`；展示模式必须传入 `--effects-lock`
+11. 读取 `references/generation-quality-gate.md`，处理静态 error，并完成桌面、移动浏览器验收
+12. 静态 warning 必须在浏览器中复核并记录；未完成静态和视觉验收时，不得宣称完成
 
 ## 审查模式输出格式
 
@@ -138,9 +166,12 @@ C. 已有页面审查或改进
 - **所有内容使用中文**（输出报告、术语、说明）
 - **技术栈不统一是常态**，同一个 Design Token 在不同平台有不同实现方式
 - **不要为了统一而抹平产品差异**，先理解用户、任务和信息密度
+- **展示模式是 OneSeven 的默认品牌视觉模式**；明确效率优先、普通后台或不需要高级视觉效果时切换为标准模式
+- **第三方 Demo 不是 OneSeven 成品**，必须记录来源、版本和许可证并完成品牌改造
 - **Apple Design 是判断参考，不是视觉模板**
 - **弹簧动效是可选实现**，受限平台可使用 CSS 或无动效方案
 - **首次审查发现大量问题时**，不要全部列出，优先展示 Top 5 强制问题 + Top 3 推荐改进，避免信息过载
+- **通用依赖不自动安装**，除非用户明确要求执行安装或修改依赖文件
 
 ## 交互风格
 

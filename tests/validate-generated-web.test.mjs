@@ -478,3 +478,194 @@ test('CLI 文件读取失败输出中文信息且不泄露 ENOENT', () => {
   assert.match(result.stderr, /Yiqi UI Standard 校验器错误：无法读取文件/);
   assert.doesNotMatch(result.stderr, /ENOENT|no such file or directory/i);
 });
+
+const validShowcaseLock = {
+  schemaVersion: 1,
+  catalogSnapshot: '2026-08-28',
+  stack: 'vanilla',
+  pageType: 'product',
+  requestedEffects: ['3d', 'typography', 'scroll'],
+  selected: [
+    {
+      id: 'threejs-core',
+      sourceUrl: 'https://threejs.org/',
+      sourceVersion: '0.185.1',
+      license: 'MIT',
+      licenseClass: 'permissive',
+      tiers: { full: 'WebGL', lite: '低复杂度 WebGL', static: '静态海报' },
+      reducedMotionFallback: '静态海报',
+    },
+    {
+      id: 'motion-core',
+      sourceUrl: 'https://motion.dev/',
+      sourceVersion: '13.1.1',
+      license: 'MIT',
+      licenseClass: 'permissive',
+      tiers: { full: '滚动编排', lite: '短距离 reveal', static: '完整展开' },
+      reducedMotionFallback: '完整展开',
+    },
+  ],
+};
+
+const validShowcaseHtml = `
+  <html
+    data-ui-brand="oneseven"
+    data-ui-page-type="product"
+    data-ui-hero="approved"
+    data-ui-visual-mode="showcase"
+    data-ui-motion-tier-policy="adaptive"
+  >
+    <style>
+      :root { color-scheme: dark; }
+      .effect { animation: reveal 600ms ease-out both; }
+      @media (prefers-reduced-motion: reduce) {
+        .effect { animation: none; transform: none; }
+      }
+    </style>
+    <section
+      class="effect"
+      data-ui-product-state="spatial-product-preview"
+      data-ui-effect-id="spatial-product-orbit"
+      data-ui-effect-source="threejs-core"
+      data-ui-effect-runtime="webgl"
+      data-ui-effect-fallback="static"
+    ><canvas data-ui-hero-media></canvas></section>
+  </html>
+`;
+
+test('有效 Showcase 页面与效果锁文件通过新增门禁', () => {
+  const report = analyzeHtml(validShowcaseHtml, {
+    effectsLock: validShowcaseLock,
+  });
+
+  assert.deepEqual(report.issues, []);
+  assert.equal(report.ok, true);
+  assert.equal(report.visualMode, 'showcase');
+});
+
+test('OneSeven 未声明视觉模式时默认进入展示模式', () => {
+  const implicitShowcaseHtml = validShowcaseHtml.replace(
+    '    data-ui-visual-mode="showcase"\n',
+    '',
+  );
+  const report = analyzeHtml(implicitShowcaseHtml, {
+    effectsLock: validShowcaseLock,
+  });
+
+  assert.equal(report.visualMode, 'showcase');
+  assert.deepEqual(report.issues, []);
+});
+
+test('Showcase 缺少 OneSeven、adaptive 或锁文件时阻塞', () => {
+  const report = analyzeHtml(`
+    <html
+      data-ui-page-type="product"
+      data-ui-hero="none"
+      data-ui-visual-mode="showcase"
+    ><style>:root { color-scheme: dark; }</style></html>
+  `);
+
+  assert.ok(issueCodes(report).includes('showcase-brand-required'));
+  assert.ok(issueCodes(report).includes('showcase-tier-policy-required'));
+  assert.ok(issueCodes(report).includes('showcase-effects-lock-required'));
+  assert.equal(report.ok, false);
+});
+
+test('Showcase 效果节点必须声明来源、静态回退与锁定条目', () => {
+  const report = analyzeHtml(`
+    <html
+      data-ui-brand="oneseven"
+      data-ui-page-type="product"
+      data-ui-hero="none"
+      data-ui-visual-mode="showcase"
+      data-ui-motion-tier-policy="adaptive"
+    >
+      <style>
+        :root { color-scheme: dark; }
+        @media (prefers-reduced-motion: reduce) { .effect { transform: none; } }
+      </style>
+      <section data-ui-effect-id="unlocked-effect"></section>
+    </html>
+  `, { effectsLock: validShowcaseLock });
+
+  assert.ok(issueCodes(report).includes('showcase-effect-source-required'));
+  assert.ok(issueCodes(report).includes('showcase-effect-fallback-required'));
+  assert.ok(issueCodes(report).includes('showcase-effect-not-locked'));
+});
+
+test('Showcase 同页拒绝多个 WebGL 主场景', () => {
+  const report = analyzeHtml(
+    validShowcaseHtml.replace(
+      '</section>',
+      '</section><section data-ui-effect-id="spatial-product-orbit" data-ui-effect-source="threejs-core" data-ui-effect-runtime="webgl" data-ui-effect-fallback="static"><canvas></canvas></section>',
+    ),
+    { effectsLock: validShowcaseLock },
+  );
+
+  assert.ok(issueCodes(report).includes('showcase-webgl-limit'));
+});
+
+test('Standard 模式拒绝 Three.js 与 GSAP 重型依赖', () => {
+  const report = analyzeHtml(`
+    <html data-ui-page-type="product" data-ui-hero="none">
+      <style>:root { color-scheme: dark; }</style>
+      <script type="module">import * as THREE from 'three'; import gsap from 'gsap';</script>
+    </html>
+  `);
+
+  assert.ok(issueCodes(report).includes('showcase-dependency-forbidden'));
+});
+
+test('Standard 模式拒绝 Liquid Glass 专用组件依赖', () => {
+  const report = analyzeHtml(`
+    <html data-ui-page-type="product" data-ui-hero="none">
+      <style>:root { color-scheme: dark; }</style>
+      <script type="module">import LiquidGlass from 'liquid-glass-react';</script>
+    </html>
+  `);
+
+  assert.ok(issueCodes(report).includes('showcase-dependency-forbidden'));
+});
+
+test('Showcase 拒绝未去 Demo 化的供应商标识', () => {
+  const report = analyzeHtml(
+    validShowcaseHtml.replace(
+      '</section>',
+      '<p>Magic UI Demo / Linear inspired</p></section>',
+    ),
+    { effectsLock: validShowcaseLock },
+  );
+
+  assert.ok(issueCodes(report).includes('showcase-vendor-demo-residue'));
+});
+
+test('CLI 读取 --effects-lock 并验证 Showcase 页面', async () => {
+  const tempDirectory = await import('node:fs/promises').then(({ mkdtemp }) =>
+    mkdtemp(new URL('./tmp-showcase-', import.meta.url)),
+  );
+  const { writeFile, rm } = await import('node:fs/promises');
+  const htmlPath = new URL('index.html', `file://${tempDirectory}/`);
+  const lockPath = new URL('oneseven-effects.lock.json', `file://${tempDirectory}/`);
+
+  try {
+    await writeFile(htmlPath, validShowcaseHtml);
+    await writeFile(lockPath, JSON.stringify(validShowcaseLock));
+    const result = spawnSync(
+      process.execPath,
+      [
+        validatorPath,
+        '--file',
+        fileURLToPath(htmlPath),
+        '--effects-lock',
+        fileURLToPath(lockPath),
+        '--json',
+      ],
+      { encoding: 'utf8' },
+    );
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(JSON.parse(result.stdout).ok, true);
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});

@@ -9,6 +9,8 @@
 - Hero / No Hero 已确认
 - 卡片材质已确认
 - 真实素材状态已确认
+- 视觉模式已记录为标准模式或展示模式
+- 展示模式的单一推荐提案已经用户确认
 
 缺少任一项时，先补齐决策，不进入代码生成。
 
@@ -23,6 +25,31 @@ Web 根元素标记：
   data-ui-card-material="solid"
 >
 ```
+
+展示模式额外标记品牌、视觉模式和自适应性能策略：
+
+```html
+<html
+  data-ui-brand="oneseven"
+  data-ui-page-type="product"
+  data-ui-hero="approved"
+  data-ui-visual-mode="showcase"
+  data-ui-motion-tier-policy="adaptive"
+>
+```
+
+每个高级效果声明目录 ID、来源、运行时和静态回退：
+
+```html
+<section
+  data-ui-effect-id="spatial-product-orbit"
+  data-ui-effect-source="threejs-core"
+  data-ui-effect-runtime="webgl"
+  data-ui-effect-fallback="static"
+>...</section>
+```
+
+展示模式页面必须生成 `oneseven-effects.lock.json`。锁文件记录目录快照、固定版本、许可证、批准范围、依赖、OneSeven 品牌改造、Full / Lite / Static 和 reduced-motion 回退。
 
 Approved Hero 的真实媒体或产品状态额外标记：
 
@@ -54,6 +81,14 @@ node path/to/yiqi-ui-standard/scripts/validate-generated-web.mjs \
   --page-type marketing
 ```
 
+展示模式校验必须提供效果锁文件：
+
+```bash
+node path/to/yiqi-ui-standard/scripts/validate-generated-web.mjs \
+  --file path/to/page.html \
+  --effects-lock path/to/oneseven-effects.lock.json
+```
+
 静态校验保持轻量：只有确定性错误由静态校验阻塞，不扩展静态校验器去推断浏览器才能确定的结果。
 
 - `error` 是阻塞项，必须修复后重跑。
@@ -72,6 +107,12 @@ node path/to/yiqi-ui-standard/scripts/validate-generated-web.mjs \
 - 可直接识别的大型装饰圆形、默认装饰分栏或硬编码品牌紫
 - 可直接确认交互元素缺少 `focus-visible`
 - 存在动效但缺少 `prefers-reduced-motion`
+- 展示模式不是 OneSeven、缺少 adaptive 性能策略或缺少 effects-lock
+- 高级效果缺少 `data-ui-effect-id`、`data-ui-effect-source` 或 Static 回退
+- 页面效果未出现在 effects-lock，或条件许可证缺少批准记录
+- 同一页面存在超过一个主要 WebGL 场景
+- 标准模式页面加载 Three.js、GSAP 或 Liquid Glass 等展示模式重型依赖
+- 页面仍保留供应商名称、演示文案或 Linear / Raycast 等复刻标识
 
 ## 静态不确定性
 
@@ -104,6 +145,11 @@ node path/to/yiqi-ui-standard/scripts/validate-generated-web.mjs \
 - 液态玻璃的对比度与减少透明降级
 - 是否存在模板化装饰和无信息视觉
 - 每条静态 warning 是否已复核并记录
+- Showcase Full / Lite / Static 是否保持相同信息与主要操作
+- `prefers-reduced-motion`、WebGL 不可用和初始化失败时是否进入 Static
+- 页面是否最多一个活跃 WebGL Canvas，离屏和页面隐藏时是否停止渲染
+- 组件来源、版本和许可证是否与 effects-lock 一致
+- 是否残留供应商 Demo 风格或通用 AI SaaS 装饰
 
 静态 DOM 测试通过不能代替截图和视觉审查。
 
@@ -129,5 +175,6 @@ export PWCLI="$CODEX_HOME/skills/playwright/scripts/playwright_cli.sh"
 - 桌面和移动截图已检查
 - 控制台无未解释错误
 - 视觉反模式清单无阻塞项
+- 展示模式的锁文件、三档降级、授权记录和浏览器验收完整
 
 无法完成浏览器验收或 warning 复核时，必须说明未验证，不得宣称页面通过。
