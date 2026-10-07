@@ -494,7 +494,7 @@ test('v2 visual tokens remain dark-first under v3', async () => {
   const tokens = JSON.parse(await read('design-tokens.json'));
   const serializedTokens = JSON.stringify(tokens);
 
-  assert.equal(tokens.meta.version, '3.2.0');
+  assert.equal(tokens.meta.version, '3.3.0');
   assert.equal(tokens.theme.default, 'dark');
   assert.equal(tokens.theme.lightGeneratedOnlyWhenRequested, true);
   assert.equal(tokens.darkColors.surfaceElevated, '#1B1B20');
@@ -985,7 +985,7 @@ test('release metadata keeps v2 behavior covered under v3', async () => {
   const cases = JSON.parse(await read('tests/evals/yiqi-ui-standard-v2-cases.json'));
   const readme = await read('README.md');
 
-  assert.equal(version, '3.2.0');
+  assert.equal(version, '3.3.0');
   assert.equal(tokens.meta.version, version);
   assert.ok(cases.length >= 9);
 
@@ -1069,7 +1069,7 @@ test('release metadata and eval cases cover v3 showcase behavior', async () => {
   const cases = JSON.parse(await read('tests/evals/yiqi-ui-standard-v2-cases.json'));
   const agentMetadata = await read('agents/openai.yaml');
 
-  assert.equal(version, '3.2.0');
+  assert.equal(version, '3.3.0');
   assert.equal(tokens.meta.version, version);
 
   const ids = new Set(cases.map((entry) => entry.id));
@@ -1102,7 +1102,8 @@ test('reference integration exposes canonical motion, library and source governa
   assert.match(motion, /yiqi-motion: allow/);
   assert.match(library, /项目已有等价依赖时，不主动迁移/);
   assert.match(library, /只给一个首选方案/);
-  assert.equal(sourceMap.sources[0].commit, 'd23d7f8');
-  assert.equal(sourceMap.sources[0].license, 'MIT');
+  const emilSource = sourceMap.sources.find(({ source }) => source === 'emilkowalski/skills');
+  assert.equal(emilSource.commit, 'd23d7f8');
+  assert.equal(emilSource.license, 'MIT');
   assert.equal(catalog.policy.automaticInstall, false);
 });

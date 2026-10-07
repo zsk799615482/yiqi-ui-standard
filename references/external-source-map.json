@@ -16,6 +16,30 @@
   },
   "sources": [
     {
+      "source": "DavidHDev/react-bits",
+      "url": "https://github.com/DavidHDev/react-bits",
+      "commit": "ca44b3f9ee180676a06d7de8ec6bea84cddff85b",
+      "license": "MIT + Commons Clause License Condition v1.0",
+      "reviewed": "2026-10-07",
+      "nextReview": "2027-04-07",
+      "integration": "catalog-reference-only",
+      "internalized": ["Glass Surface default recommendation for React liquid glass", "original brand adaptation and fallback guide"],
+      "excluded": ["上游组件源码及其组件包、模板或移植版本再分发", "其他 React Bits 组件的自动取用", "vendor demo and default styles"],
+      "notes": "Conditional, not pure MIT. Preserve copyright and license when a confirmed business project takes source from the pinned commit. The Skill bundles no upstream component implementation."
+    },
+    {
+      "source": "DavidHDev/vue-bits",
+      "url": "https://github.com/DavidHDev/vue-bits",
+      "commit": "07c0f76d5567db022c2e3185dd97a2311e056c0c",
+      "license": "MIT + Commons Clause License Condition v1.0",
+      "reviewed": "2026-10-07",
+      "nextReview": "2027-04-07",
+      "integration": "catalog-reference-only",
+      "internalized": ["Glass Surface default recommendation for Vue liquid glass", "original SSR, lifecycle and brand adaptation guide"],
+      "excluded": ["上游组件源码及其组件包、模板或移植版本再分发", "其他 Vue Bits 组件的自动取用", "automatic Tailwind installation", "vendor demo and default styles"],
+      "notes": "Conditional, not pure MIT. Preserve copyright and license when a confirmed business project takes source from the pinned commit. The Skill bundles no upstream component implementation."
+    },
+    {
       "source": "emilkowalski/skills",
       "url": "https://github.com/emilkowalski/skills",
       "commit": "d23d7f8",

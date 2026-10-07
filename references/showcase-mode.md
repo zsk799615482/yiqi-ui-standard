@@ -18,9 +18,9 @@ OneSeven 品牌默认启用展示模式。只有在以下情况下切换为标�
 1. 完成品牌、项目阶段、产品画像、页面任务、Hero 与卡片材质入口。
 2. 判断高级效果是否承载真实产品能力、过程、结果或叙事；没有内容依据时回到标准模式。
 3. 确认 React / Next、Vue / Nuxt 或 Vanilla Web。
-4. 读取 `showcase-catalog.json`，运行 `../scripts/resolve-showcase-components.mjs`。
+4. 读取 `showcase-catalog.json`，识别默认来源与许可；React / Vue 液态玻璃按需读取 `glass-surface.md`。
 5. 输出一个单一推荐提案，等待用户确认。
-6. 用户确认后取用源码或安装运行时，生成 `oneseven-effects.lock.json`。
+6. 用户确认提案与当前项目条件许可后运行解析器，生成 `oneseven-effects.lock.json`，再取用源码或安装运行时。
 7. 实现 Full、Lite、Static 三档。
 8. 运行静态校验、桌面/移动浏览器验收和降级测试。
 
@@ -85,25 +85,44 @@ node scripts/resolve-showcase-components.mjs \
 
 | 目录 ID | 技术栈 | 取用方式 | 授权策略 |
 |---|---|---|---|
-| `liquid-glass-react` | React / Next | 安装 `liquid-glass-react@1.1.1` | MIT，核心自动推荐 |
-| `liquid-glass-vue` | Vue / Nuxt | 安装 `@wxperia/liquid-glass-vue@1.0.9` | MIT，按 npm 包许可证记录，核心自动推荐 |
+| `react-bits-glass-surface` | React / Next 默认 | 业务项目从锁定 commit 取用 GlassSurface TSX/JSX 与 CSS | MIT + Commons Clause，当前项目确认后取用 |
+| `vue-bits-glass-surface` | Vue / Nuxt 默认 | 业务项目从锁定 commit 取用 Vue SFC | MIT + Commons Clause，当前项目确认后取用 |
 | `liquid-glass-vanilla-source` | Vanilla Web | 复制锁定 commit 中的 CSS/SVG 配方文件 | MIT，核心自动推荐 |
+| `liquid-glass-react` | React / Next 显式备选 | 安装 `liquid-glass-react@1.1.1` | MIT |
+| `liquid-glass-vue` | Vue / Nuxt 显式备选 | 安装 `@wxperia/liquid-glass-vue@1.0.9` | MIT，按 npm 包许可证记录 |
 
-示例：
+React / Vue 默认推荐 Glass Surface，但推荐不等于许可批准。两者不标为纯 MIT；Skill 仅记录来源与原创指南，不打包上游源码。先说明条件许可，再取得当前项目确认；未确认的解析请求会提示批准或显式选择备选，不生成锁文件，也不静默换源。具体取用、品牌适配、SSR 与降级要求读取 `glass-surface.md`。
+
+当前项目许可已经确认后的示例（不得替用户自动批准）：
 
 ```bash
 node scripts/resolve-showcase-components.mjs \
   --stack react \
   --page-type product \
   --effects liquid-glass \
+  --approve-conditional react-bits-glass-surface \
   --output oneseven-effects.lock.json
 
 node scripts/resolve-showcase-components.mjs \
   --stack vue \
   --page-type product \
   --effects liquid-glass \
+  --approve-conditional vue-bits-glass-surface \
   --output oneseven-effects.lock.json
 ```
+
+用户明确选择纯 MIT 备选：
+
+```bash
+node scripts/resolve-showcase-components.mjs \
+  --stack react \
+  --page-type product \
+  --effects liquid-glass \
+  --liquid-glass-source liquid-glass-react \
+  --output oneseven-effects.lock.json
+```
+
+Vue 备选使用 `--stack vue --liquid-glass-source liquid-glass-vue`。`--liquid-glass-source` 只控制液态玻璃，必须同时请求 `liquid-glass`，来源必须支持目标技术栈；其他效果推荐不变。来源选择不是许可豁免，显式选择 Glass Surface 仍需要批准。
 
 这些来源只负责折射、滤镜和容器行为，不覆盖 OneSeven 材质层。组件默认参数必须被品牌配方重写：使用 36px 连续圆角、Alibaba PuHuiTi、暗色 Token、克制品牌紫和真实内容；不得把供应商的 999px 胶囊、Demo Logo、示例文案或全屏 shader 带入业务页面。Vanilla 目录的同名 npm 包 `liquid-glass@1.0.0` 不属于该仓库，不得安装。
 
@@ -191,7 +210,7 @@ node scripts/resolve-showcase-components.mjs \
 - `conditional`：必须记录用户或公司的明确批准，只在当前项目使用。
 - `restricted`：不得自动选择，不得复制、移植或重新分发。
 
-效果锁文件必须记录目录快照、来源 URL、固定版本、许可证、批准范围、依赖、品牌配方和验证步骤。无法确认许可证时停止取用并选择宽松替代项。
+效果锁文件必须记录目录快照、来源 URL、固定版本、许可证、批准范围、依赖、品牌配方和验证步骤。无法确认许可证时停止取用，提示用户确认或显式选择宽松替代项，不静默替换默认来源。
 
 ## 常见失败
 

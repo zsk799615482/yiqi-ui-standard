@@ -108,6 +108,7 @@ C. 已有页面审查或改进
 - OneSeven 品牌指导：`references/oneseven-guidance.md`
 - OneSeven 展示模式组件与动效：`references/showcase-mode.md`
 - 展示模式可审计目录：`references/showcase-catalog.json`
+- React / Vue 液态玻璃按需取用指南：`references/glass-surface.md`
 - 动效单一事实来源：`references/animation-craft.md`
 - 通用工程库选择：`references/library-selection.md`、`references/library-catalog.json`
 - 外部来源账本：`references/external-source-map.json`
@@ -122,7 +123,7 @@ C. 已有页面审查或改进
 4. 确认技术栈和平台
 5. 若需要通用工程依赖，先按 `library-selection.md` 做现有依赖、原生能力、许可证、无障碍和性能检查；用户明确要求时才安装或修改依赖
 6. 若页面属于 AI 创作 / 对话工作台，按任务读取 `ai-component-catalog.json`；AICSS、Beautiful UI 和 Thinking Orbs 同一任务只选一个来源，Pro 或商业依赖不得自动取用
-7. 若为展示模式，先运行 `scripts/resolve-showcase-components.mjs`，输出一个推荐提案并等待用户确认；用户选择液态玻璃时使用 `--effects liquid-glass`，按目录中的 React、Vue 或 Vanilla 专用配方取用
+7. 若为展示模式，读取目录并输出一个推荐提案，等待用户确认后运行 `scripts/resolve-showcase-components.mjs`；用户选择液态玻璃时使用 `--effects liquid-glass`。React / Next 默认推荐 `react-bits-glass-surface`，Vue / Nuxt 默认推荐 `vue-bits-glass-surface`，此时按需读取 `references/glass-surface.md`；两者均为 MIT + Commons Clause 条件许可，确认当前项目许可后才传入 `--approve-conditional <catalog-id>` 生成锁文件。未确认时停止，不静默换源；用户明确选择备选时使用 `--liquid-glass-source <catalog-id>`。Vanilla 默认方案不变；Skill 不打包上游组件源码，也不自动下载
 8. 生成代码；展示模式同时生成 `oneseven-effects.lock.json` 和 Full / Lite / Static 三档
 9. 在 Web 根元素添加 `data-ui-page-type`、`data-ui-hero` 和 `data-ui-card-material`；展示模式额外声明品牌、视觉模式和性能策略元数据
 10. 运行 `scripts/validate-generated-web.mjs`；展示模式必须传入 `--effects-lock`

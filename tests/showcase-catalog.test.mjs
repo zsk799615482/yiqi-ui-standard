@@ -42,7 +42,7 @@ test('Showcase 目录条目具有完整、可审计的公共契约', async () =>
   const document = JSON.parse(await readFile(catalogUrl, 'utf8'));
 
   assert.equal(document.schemaVersion, 1);
-  assert.equal(document.snapshotDate, '2026-09-02');
+  assert.equal(document.snapshotDate, '2026-10-07');
   assert.ok(document.entries.length >= 5);
 
   const ids = new Set(document.entries.map(({ id }) => id));
@@ -57,6 +57,8 @@ test('Showcase 目录条目具有完整、可审计的公共契约', async () =>
     'liquid-glass-vanilla-source',
     'border-beam',
     'liquid-gooey',
+    'react-bits-glass-surface',
+    'vue-bits-glass-surface',
   ]) {
     assert.ok(ids.has(id), `missing catalog entry: ${id}`);
   }
@@ -107,7 +109,7 @@ test('解析器为 React 3D 工作台返回唯一、宽松授权的推荐组合'
   });
 
   assert.equal(lock.schemaVersion, 1);
-  assert.equal(lock.catalogSnapshot, '2026-09-02');
+  assert.equal(lock.catalogSnapshot, '2026-10-07');
   assert.equal(lock.stack, 'react');
   assert.equal(lock.pageType, 'saas-ai-workspace');
   assert.deepEqual(lock.requestedEffects, ['3d', 'typography', 'scroll']);
@@ -191,13 +193,14 @@ test('条件许可组件只有显式批准后才能进入锁文件', async () =>
   assert.equal(gsap?.licenseClass, 'conditional');
 });
 
-test('liquid-glass 效果按技术栈返回专用来源并保持版本锁定', async () => {
+test('liquid-glass 显式备选保持版本锁定，Vanilla 默认来源不变', async () => {
   const catalog = await loadShowcaseCatalog();
 
   const reactLock = resolveShowcaseComponents(catalog, {
     stack: 'react',
     pageType: 'product',
     effects: ['liquid-glass'],
+    liquidGlassSource: 'liquid-glass-react',
   });
   assert.deepEqual(reactLock.selected.map(({ id }) => id), ['liquid-glass-react']);
   assert.deepEqual(reactLock.install.pinnedDependencies, ['liquid-glass-react@1.1.1']);
@@ -217,6 +220,7 @@ test('liquid-glass 效果按技术栈返回专用来源并保持版本锁定', a
     stack: 'vue',
     pageType: 'product',
     effects: ['liquid-glass'],
+    liquidGlassSource: 'liquid-glass-vue',
   });
   assert.deepEqual(vueLock.selected.map(({ id }) => id), ['liquid-glass-vue']);
   assert.equal(vueLock.selected[0].licenseClass, 'permissive');

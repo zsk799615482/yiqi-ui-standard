@@ -94,9 +94,46 @@ export const resolveShowcaseComponents = (catalog, options) => {
 
   const requestedEffects = normalizeEffects(options.effects);
   const approvedConditional = new Set(options.approvedConditional ?? []);
+  const liquidGlassSource = String(options.liquidGlassSource ?? '').trim();
+  if (liquidGlassSource && !requestedEffects.includes('liquid-glass')) {
+    throw new Error('--liquid-glass-source 仅用于 --effects 包含 liquid-glass 的请求。');
+  }
   const selected = new Map();
 
   for (const effect of requestedEffects) {
+    const preferredId = effect === 'liquid-glass'
+      ? liquidGlassSource || catalog.policy?.liquidGlassDefaults?.[stack]
+      : null;
+    if (preferredId) {
+      const preferred = catalog.entries.find(({ id }) => id === preferredId);
+      if (
+        !preferred ||
+        !preferred.supportedStacks.includes(stack) ||
+        !preferred.capabilities.includes('liquid-glass')
+      ) {
+        throw new Error(`液态玻璃来源 ${preferredId} 不存在或不支持 ${stack} 的 liquid-glass 效果。`);
+      }
+      if (!['permissive', 'conditional'].includes(preferred.licenseClass)) {
+        throw new Error(`液态玻璃来源 ${preferredId} 的许可受限或未知，不能取用。`);
+      }
+      if (
+        preferred.licenseClass === 'conditional' &&
+        !approvedConditional.has(preferred.id)
+      ) {
+        const alternatives = catalog.entries.filter(
+          (entry) =>
+            entry.supportedStacks.includes(stack) &&
+            entry.capabilities.includes('liquid-glass') &&
+            entry.licenseClass === 'permissive',
+        ).map(({ id }) => id).join(', ');
+        throw new Error(
+          `液态玻璃推荐来源 ${preferred.id} 使用 ${preferred.license}；确认当前项目许可条件后添加 --approve-conditional ${preferred.id}，或通过 --liquid-glass-source 显式选择 MIT 备选：${alternatives || '无'}。未批准时不会生成锁文件或静默替换来源。`,
+        );
+      }
+      selected.set(preferred.id, preferred);
+      continue;
+    }
+
     const compatible = catalog.entries.filter(
       (entry) =>
         entry.supportedStacks.includes(stack) &&
@@ -181,7 +218,7 @@ const parseArguments = (args) => {
       continue;
     }
     if (
-      ['--stack', '--page-type', '--effects', '--output', '--approve-conditional'].includes(argument)
+      ['--stack', '--page-type', '--effects', '--output', '--approve-conditional', '--liquid-glass-source'].includes(argument)
     ) {
       const value = args[index + 1];
       if (!value || value.startsWith('--')) {
@@ -193,6 +230,7 @@ const parseArguments = (args) => {
         '--effects': 'effects',
         '--output': 'output',
         '--approve-conditional': 'approvedConditional',
+        '--liquid-glass-source': 'liquidGlassSource',
       };
       options[keys[argument]] = argument === '--approve-conditional'
         ? value.split(',').map((item) => item.trim()).filter(Boolean)

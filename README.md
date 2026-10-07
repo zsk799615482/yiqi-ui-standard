@@ -1,6 +1,6 @@
 # Yiqi UI Standard
 
-**当前版本：** `3.2.0`
+**当前版本：** `3.3.0`
 
 `yiqi-ui-standard` 是一个快速帮助开发人员统一 UI 规范的决策型 Skill，覆盖 UI 规划、代码生成和已有页面审查。它以 OneSeven / 壹柒研究所品牌规范为默认基线，通过产品画像、页面级路由、Design Tokens、静态校验和桌面/移动浏览器验收，控制生成结果的一致性与实际可用性。v3 新增 OneSeven 展示模式，作为 OneSeven 品牌的默认视觉模式，用于可审计地取用高级组件、代码生成 3D、排版动画与滚动叙事；明确效率优先或普通后台需求时可切换为标准模式。动效与依赖选择参考 Emil Kowalski 的方法，但不直接安装或复制外部 skills。
 
@@ -161,9 +161,20 @@ node scripts/resolve-showcase-components.mjs \
   --output oneseven-effects.lock.json
 ```
 
-首批 Showcase 核心候选包括 Motion、Three.js、Magic UI 源码配方、Reka UI，以及按需启用的 Liquid Glass 专用来源：`liquid-glass-react`（React）、`liquid-glass-vue`（Vue）和 `liquid-glass-vanilla-source`（CSS/SVG 源码配方）。通用工程库由 `references/library-catalog.json` 管理；两类目录不得合并。GSAP / ScrollTrigger 属于条件许可项，只有显式批准并写入锁文件时才能使用。React Bits、Aceternity、付费或许可不明确来源不进入核心自动推荐。
+Showcase 核心候选包括 Motion、Three.js、Magic UI 源码配方和 Reka UI。v3.3 中 React / Next 液态玻璃默认推荐 `react-bits-glass-surface`，Vue / Nuxt 默认推荐 `vue-bits-glass-surface`；Vanilla 保持 `liquid-glass-vanilla-source`。现有 `liquid-glass-react`、`liquid-glass-vue` 保留为显式 MIT 备选。通用工程库由 `references/library-catalog.json` 管理；两类目录不得合并。GSAP 和这两个 Glass Surface 来源都属于条件许可项，只有当前项目显式批准并写入锁文件时才能取用。此例外仅限已核验的 Glass Surface，不代表其他 React Bits / Vue Bits、Aceternity 或付费组件默认可用。
 
-液态玻璃专用来源只提供折射、滤镜和容器行为，不替代 OneSeven 材质规范。必须先确认卡片材质，再通过 `--effects liquid-glass` 解析；React 使用 `liquid-glass-react@1.1.1`，Vue 使用 `@wxperia/liquid-glass-vue@1.0.9`，Vanilla 只复制锁定 commit 的 CSS/SVG 文件。不要安装与 Vanilla 仓库无关的同名 npm `liquid-glass@1.0.0`，也不得保留供应商 999px 圆角、Logo、Demo 文案或全屏 shader。
+液态玻璃专用来源只提供折射、滤镜和容器行为，不替代 OneSeven 材质规范。必须先确认卡片材质，再通过 `--effects liquid-glass` 解析；Glass Surface 使用 **MIT + Commons Clause**，不是纯 MIT。Skill 不打包上游组件源码，只记录固定 commit、取用路径与原创指南；业务项目确认许可后取用并保留版权及完整许可声明。未确认时提示批准或显式选择备选，不静默换源、不生成锁文件。按需读取 `references/glass-surface.md`，执行品牌适配、SSR、多实例、清理和 Full / Lite / Static 回退。
+
+当前项目许可已经确认后生成默认来源锁文件：
+
+```bash
+node scripts/resolve-showcase-components.mjs \
+  --stack react --page-type product --effects liquid-glass \
+  --approve-conditional react-bits-glass-surface \
+  --output oneseven-effects.lock.json
+```
+
+Vue 使用 `--stack vue --approve-conditional vue-bits-glass-surface`。用户明确选择 MIT 备选时，React 使用 `--liquid-glass-source liquid-glass-react`，Vue 使用 `--liquid-glass-source liquid-glass-vue`，仍请求 `--effects liquid-glass`。解析器对应新增可选 `liquidGlassSource` 参数，只影响液态玻璃效果；来源选择不能绕过条件许可。Glass Surface 本身无需 npm 运行时安装，不自动下载源码；Vanilla 不要安装与来源仓库无关的同名 npm `liquid-glass@1.0.0`。
 
 ## Web 接入
 
@@ -384,6 +395,7 @@ yiqi-ui-standard/
 | `references/ai-component-catalog.json` | AICSS、Beautiful UI 和 AI 状态组件的任务级来源目录 |
 | `references/discovery-sources.json` | Watermelon 等组件发现来源的允许路径和禁止边界 |
 | `references/external-source-map.json` | 外部参考来源、commit、许可证和复核日期账本 |
+| `references/glass-surface.md` | React / Vue 默认 Glass Surface 的条件许可、源码取用边界、品牌适配与回退 |
 | `references/platform-implementations.md` | Web、小程序和 React Native 等平台实现 |
 | `references/review-checklist.md` | 审查入口、阻塞项和报告格式 |
 | `references/interview-workflow.md` | 从零建立品牌标准的访谈流程 |
@@ -395,7 +407,7 @@ yiqi-ui-standard/
 - 修改结构化令牌后同步检查 `theme.css` 的 CSS 变量映射
 - 修改 Skill 契约或参考规则后运行全部 Node.js 测试
 - 参考外部 skills 时只内化方法，来源 commit、许可证和复核日期记录在 `references/external-source-map.json`
-- 更新展示模式目录时核验来源、固定版本、许可证和当前核验日期；现有目录保留 `2026-08-28` 基线快照，新加入的 Liquid Glass 条目记录 `2026-09-02` 核验日期
+- 更新展示模式目录时核验来源、固定版本、许可证和当前核验日期；目录快照更新为 `2026-10-07`，Glass Surface 条目记录同日核验；原有条目保留各自历史核验日期，不伪称已经全部重新核验
 - 字体来源、法律声明和 SHA-256 位于 `assets/fonts/FONT-NOTICE.md`
 - `references/` 默认由 Skill 只读；只有提取或引导模式明确需要时才更新
 
