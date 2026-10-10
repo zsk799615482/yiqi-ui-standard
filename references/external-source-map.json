@@ -112,6 +112,30 @@
       "internalized": ["Prompt, Context, Tool, Task and Diff workbench recipes"],
       "excluded": ["default foundation styles", "vendor demo pages and copy", "commercial icon dependency"],
       "notes": "Website source is tracked as a dated reference snapshot until a stable repository commit is available."
+    },
+    {
+      "source": "htmlstreamofficial/preline",
+      "url": "https://preline.co/blocks/marketing/website-headers/#full-width-mega-menu-header",
+      "commit": null,
+      "license": "MIT + Preline UI Fair Use License",
+      "reviewed": "2026-10-07",
+      "nextReview": "2027-04-07",
+      "integration": "top-navigation-catalog-source-recipe",
+      "internalized": ["full-width-mega-menu-header information architecture and source inspection path"],
+      "excluded": ["原始区块原样再分发", "Preline 默认主题、Demo 文案和未核验 Pro 内容", "自动安装 Preline 或 Tailwind"],
+      "notes": "Official Website Headers block and license page were reviewed as dated references. Fair Use conditions and attribution must be checked again for each business project."
+    },
+    {
+      "source": "aceternity/ui",
+      "url": "https://ui.aceternity.com/components/resizable-navbar",
+      "commit": null,
+      "license": "Aceternity License; component-specific open-source license not confirmed",
+      "reviewed": "2026-10-07",
+      "nextReview": "2027-04-07",
+      "integration": "top-navigation-catalog-source-recipe",
+      "internalized": ["resizable navbar scroll-state behavior and React/Tailwind/Motion integration cues"],
+      "excluded": ["未核验源码的复制、再分发或自动安装", "Aceternity Pro material", "vendor demo styles and page templates"],
+      "notes": "The component page and official licence/terms pages were reviewed. A downloadable Item license permits end products but restricts source-file redistribution and marketplace template distribution; verify the actual component package and any third-party licenses per project."
     }
   ]
 }

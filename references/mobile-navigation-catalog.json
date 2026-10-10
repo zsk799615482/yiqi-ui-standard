@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "snapshotDate": "2026-10-10",
+  "catalog": "mobile-navigation",
+  "policy": {"default": null, "automaticInstall": false, "reverifyAtImplementation": true, "explicitSelectionOverridesRecommendation": true, "scope": "ios26-style-bottom-tabbar"},
+  "entries": [
+    {"id": "konsta-tabbar-react", "name": "Konsta UI · Tabbar（React）", "defaultFor": "none", "role": "mobile-bottom-tabbar", "supportedStacks": ["react"], "integrationMode": "source-recipe", "sourceUrl": "https://konstaui.com/react/tabbar", "sourceVersion": null, "verificationStatus": "research-only", "licenseStatus": "reverify-at-use", "recipe": "mobile-navigation-recipes.md#konsta-tabbar"},
+    {"id": "konsta-tabbar-vue", "name": "Konsta UI · Tabbar（Vue）", "defaultFor": "none", "role": "mobile-bottom-tabbar", "supportedStacks": ["vue"], "integrationMode": "source-recipe", "sourceUrl": "https://konstaui.com/vue/tabbar", "sourceVersion": null, "verificationStatus": "research-only", "licenseStatus": "reverify-at-use", "recipe": "mobile-navigation-recipes.md#konsta-tabbar"}
+  ]
+}

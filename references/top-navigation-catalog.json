@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "snapshotDate": "2026-10-07",
+  "catalog": "top-navigation",
+  "policy": {
+    "taskFirst": true,
+    "automaticInstall": false,
+    "singleRecommendationPerTask": true,
+    "reverifyAtImplementation": true,
+    "onesevenDefault": "17-top-dock",
+    "explicitSelectionOverridesDefault": true,
+    "nonDefaultDoesNotMeanForbidden": true
+  },
+  "entries": [
+    {
+      "id": "17-top-dock",
+      "name": "17 Top-dock",
+      "defaultFor": "oneseven",
+      "source": "yiqi-ui-standard",
+      "sourceUrl": "local://assets/17-top-dock",
+      "sourceVersion": "workspace-template-2026-10-07",
+      "license": "项目内原创模板；依赖和第三方材质按各自项目许可核验",
+      "licenseClass": "internal-template",
+      "supportedStacks": ["react-next", "vue-nuxt", "vanilla-web"],
+      "integrationMode": "internal-template",
+      "dependencies": ["按目标栈复用项目已有 React/Vue、Radix/Reka、Motion 和图标依赖；不自动安装"],
+      "automaticInstall": false,
+      "recommendedContexts": ["OneSeven 品牌顶部主导航", "全宽下拉式 Mega Menu", "需要品牌默认导航的营销或产品页面"],
+      "forbiddenContexts": ["已有批准的侧边导航或悬浮导航承担同一主任务", "移动底部导航或移动抽屉替代品"],
+      "brandRecipe": "Logo 左对齐、导航按钮右对齐、全宽导航和全宽下拉面板；按项目主题映射深浅色、玻璃材质和滚动行为，使用真实品牌资产。",
+      "fallback": "项目现有顶部导航，或按同一语义结构使用 CSS Lite / Static 材质降级。",
+      "verificationSteps": ["确认页面确需顶部主导航且没有已批准等价方案", "验证全宽边界、菜单键盘语义、深浅色、滚动隐藏与恢复", "完成桌面、窄桌面、移动和 reduced-motion 验收"]
+    },
+    {
+      "id": "preline-website-headers",
+      "name": "Preline · Website Headers",
+      "defaultFor": "none",
+      "source": "Preline UI",
+      "sourceUrl": "https://preline.co/blocks/marketing/website-headers/#full-width-mega-menu-header",
+      "sourceVersion": "official website snapshot 2026-10-07; block full-width-mega-menu-header",
+      "license": "MIT + Preline UI Fair Use License；需保留许可与归属，不得用于直接竞争 Preline UI 的产品或服务",
+      "licenseClass": "conditional-fair-use",
+      "supportedStacks": ["tailwind-html", "tailwind-react", "tailwind-vue"],
+      "integrationMode": "source-recipe",
+      "dependencies": ["Tailwind CSS", "按保留的交互行为核验是否需要 Preline JS；不自动安装"],
+      "automaticInstall": false,
+      "recommendedContexts": ["明确需要营销站 Website Header", "需要全宽 Mega Menu 的页面", "项目已经采用 Tailwind CSS 约定"],
+      "forbiddenContexts": ["未核验 Fair Use 条件的商业派生模板", "将 Preline 原始区块原样再分发", "壹柒页面只是需要默认顶部导航且没有明确选择 Preline"],
+      "brandRecipe": "只取用全宽下拉的信息架构、分组链接和触发几何；重写为项目 Token、真实品牌 Logo、品牌文案和现有图标系统，不复制 Preline 默认主题或 Demo 文案。",
+      "fallback": "17 Top-dock（壹柒默认）或项目现有顶部导航；无 Tailwind 时使用原生 HTML/CSS 语义重建。",
+      "verificationSteps": ["打开官方锚点并核对 Preview/HTML 与实际取用范围", "确认当前项目接受 MIT + Fair Use 条件并保留归属与许可", "验证全宽面板、焦点、Escape、外部点击、移动顺序和深浅色主题"]
+    },
+    {
+      "id": "resizable-navbar",
+      "name": "Resizable Navbar",
+      "defaultFor": "none",
+      "source": "Aceternity UI",
+      "sourceUrl": "https://ui.aceternity.com/components/resizable-navbar",
+      "sourceVersion": "official website snapshot 2026-10-07",
+      "license": "Aceternity License；组件页未确认独立开源许可证，条款对可下载 Item 允许用于最终产品但限制源文件再分发和模板市场分发，必须项目级核验",
+      "licenseClass": "review-required",
+      "supportedStacks": ["react-next"],
+      "integrationMode": "source-recipe",
+      "dependencies": ["React", "Tailwind CSS", "Motion / Framer Motion 版本与许可需项目级核验"],
+      "automaticInstall": false,
+      "recommendedContexts": ["明确需要随滚动收缩导航条", "React/Next 项目已使用 Tailwind 与 Motion", "导航本身是页面的滚动状态反馈"],
+      "forbiddenContexts": ["未完成组件源码和许可核验的商业项目", "需要 Vue/Nuxt 或原生 Web 却没有批准移植方案", "壹柒页面只是需要默认顶部导航且没有明确选择 Resizable"],
+      "brandRecipe": "只参考滚动收缩、尺寸过渡和 sticky/fixed 行为；重写品牌 Logo、Token、菜单语义和可访问性，不把 Aceternity Demo 主题或整页模板带入项目。",
+      "fallback": "17 Top-dock 的 smart 滚动行为，或项目已有顶部导航加原生 CSS transition。",
+      "verificationSteps": ["锁定实际要取用的公开源码版本并检查组件级许可证", "验证滚动方向、顶部阈值、菜单展开时的保护和 reduced-motion", "仅在 React/Next 中按已批准适配方案验收；其他栈需另行确认"]
+    }
+  ]
+}

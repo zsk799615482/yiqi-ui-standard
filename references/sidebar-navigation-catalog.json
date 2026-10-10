@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "snapshotDate": "2026-10-10",
+  "catalog": "sidebar-navigation",
+  "policy": {"default": null, "automaticInstall": false, "reverifyAtImplementation": true, "explicitSelectionOverridesRecommendation": true},
+  "entries": [
+    {"id": "daisyui-drawer", "name": "daisyUI · Drawer", "defaultFor": "none", "role": "drawer-sidebar", "supportedStacks": ["tailwind-html"], "integrationMode": "source-recipe", "sourceUrl": "https://daisyui.com/components/drawer/", "sourceVersion": null, "verificationStatus": "research-only", "licenseStatus": "reverify-at-use", "recipe": "sidebar-navigation-recipes.md#drawer"},
+    {"id": "aceternity-sidebar", "name": "Aceternity UI · Sidebar component", "defaultFor": "none", "role": "collapsible-sidebar", "supportedStacks": ["react"], "integrationMode": "source-recipe", "sourceUrl": "https://ui.aceternity.com/components/sidebar", "sourceVersion": null, "verificationStatus": "research-only", "licenseStatus": "reverify-at-use", "recipe": "sidebar-navigation-recipes.md#aceternity-sidebar"},
+    {"id": "react-bits-staggered-menu", "name": "React Bits · Staggered Menu", "defaultFor": "none", "role": "overlay-menu", "supportedStacks": ["react"], "integrationMode": "source-recipe", "sourceUrl": "https://reactbits.dev/components/staggered-menu", "sourceVersion": null, "verificationStatus": "research-only", "licenseStatus": "reverify-at-use", "recipe": "sidebar-navigation-recipes.md#staggered-menu"},
+    {"id": "vue-bits-staggered-menu", "name": "Vue Bits · Staggered Menu", "defaultFor": "none", "role": "overlay-menu", "supportedStacks": ["vue"], "integrationMode": "source-recipe", "sourceUrl": "https://github.com/DavidHDev/vue-bits/blob/main/src/content/Components/StaggeredMenu/StaggeredMenu.vue", "sourceVersion": null, "verificationStatus": "research-only", "licenseStatus": "reverify-at-use", "recipe": "sidebar-navigation-recipes.md#staggered-menu"},
+    {"id": "shadcn-studio-dashboard-sidebar", "name": "shadcn/studio · Dashboard Sidebar", "defaultFor": "none", "role": "application-sidebar", "supportedStacks": ["react"], "integrationMode": "block-collection", "sourceUrl": "https://shadcnstudio.com/blocks/dashboard-and-application/dashboard-sidebar", "sourceVersion": null, "verificationStatus": "specific-block-required", "licenseStatus": "reverify-at-use", "recipe": "sidebar-navigation-recipes.md#dashboard-sidebar"},
+    {"id": "untitled-ui-sidebar-navigations", "name": "Untitled UI · Sidebar navigations", "defaultFor": "none", "role": "sidebar-visual-reference", "supportedStacks": [], "integrationMode": "visual-reference", "sourceUrl": "https://www.untitledui.com/components/sidebar-navigations", "sourceVersion": null, "verificationStatus": "figma-reference-only", "licenseStatus": "reverify-at-use", "recipe": "sidebar-navigation-recipes.md#untitled-sidebar"}
+  ]
+}

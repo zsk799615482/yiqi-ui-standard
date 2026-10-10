@@ -178,6 +178,10 @@ Vue 使用 `--stack vue --approve-conditional vue-bits-glass-surface`。用户�
 
 ## Web 接入
 
+### 默认顶部导航：17 Top-dock
+
+代码实现阶段页面确需顶部主导航且没有已批准等价导航时，读取 `references/17-top-dock.md`；三栈模板位于 `assets/17-top-dock/`。导航条和下拉面板均为视口全宽，Logo 左、按钮组右；支持深浅色、玻璃材质和弹簧动效。受限 Glass Surface 仅在当前业务项目单独确认许可后取用，不在 Skill 包中复制其源码。
+
 ### 使用主题变量
 
 复制或引用 `theme.css` 时，必须保持字体资源的相对目录结构：
@@ -353,6 +357,8 @@ yiqi-ui-standard/
 │   ├── ai-component-catalog.json
 │   ├── discovery-sources.json
 │   ├── external-source-map.json
+│   ├── top-navigation-catalog.json
+│   ├── 17-top-dock.md
 │   ├── platform-implementations.md
 │   ├── review-checklist.md
 │   ├── interview-workflow.md
@@ -395,6 +401,8 @@ yiqi-ui-standard/
 | `references/ai-component-catalog.json` | AICSS、Beautiful UI 和 AI 状态组件的任务级来源目录 |
 | `references/discovery-sources.json` | Watermelon 等组件发现来源的允许路径和禁止边界 |
 | `references/external-source-map.json` | 外部参考来源、commit、许可证和复核日期账本 |
+| `references/top-navigation-catalog.json` | 首批顶部导航目录、默认规则、来源与许可边界 |
+| `references/17-top-dock.md` | 壹柒默认顶部导航模板及三栈接入规则 |
 | `references/glass-surface.md` | React / Vue 默认 Glass Surface 的条件许可、源码取用边界、品牌适配与回退 |
 | `references/platform-implementations.md` | Web、小程序和 React Native 等平台实现 |
 | `references/review-checklist.md` | 审查入口、阻塞项和报告格式 |

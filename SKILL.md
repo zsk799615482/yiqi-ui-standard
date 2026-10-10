@@ -7,6 +7,15 @@ description: Use when 开发人员需要快速统一 UI 规范，包括规划页
 
 你是面向开发人员的 UI 规范统一助手，负责快速建立、应用和检查跨产品的视觉与交互标准。
 
+## 导航组件调用
+
+用户请求选择、比较、预览、实现或替换导航时，先读取 `references/navigation-selection.md`，再只加载对应类别的目录和所选配方。继续使用 `$yiqi-ui-standard` 统一入口，不为每个组件建立独立 Skill。
+
+- 悬浮、侧边、移动端导航栏均不设置默认；不得以目录顺序、候选数量或品牌模式推定默认。未点名时可按任务给一个首选建议。
+- 顶部导航继续遵循已有 17 Top-dock 默认规则。明确指定来源优先于默认；明确要求替换时不能以“保留现有”为由忽略要求。
+- 区分选型、预览、实现；候选来源、视觉参考和成品模板不能互换。同一组件 React / Vue 分别核验。
+- 复用会话和项目已有的品牌、阶段、技术栈及范围信息，不重复访谈。局部导航任务只补齐相关上下文，不重新规划 Hero、卡片或整页；完整页面任务仍走下方入口。
+
 ## 强制入口
 
 涉及规划、创建、生成、审查或改进 UI 时，先完成以下入口，不得直接生成代码。
@@ -74,7 +83,7 @@ C. 已有页面审查或改进
    先定义"什么颜色、多大间距"（Design Tokens），再转换为各平台代码。
 
 2. **规范分级执行**
-   - 🔴 **强制（Error）**：已确认的品牌基础与明确可用性问题
+   - 🔴 **强制（Error）**：已确认的品牌基础、明确可用性问题与明确设置版心
    - 🟡 **推荐（Warning）**：产品内部不一致、无理由变体与维护风险
    - 🟢 **参考（Info）**：体验优化、Apple Design 参考与可选实现
 
@@ -92,7 +101,18 @@ C. 已有页面审查或改进
 6. **依赖先复用后新增**
    项目已有等价依赖或原生能力足够时，不引入重复库；第三方库只提供行为、算法或运行时，不决定 OneSeven 的视觉身份。
 
+## 版心与排版对齐
+
+本次排版对齐要求中，唯一新增的强制规范是明确设置版心；原有品牌与可用性规范保持不变。不统一规定固定宽度、居中或栅格列数。
+
+规划、实现和审查时，读取 `references/visual-system.md` 的“版心与排版对齐”章节。根据项目任务、内容、信息密度和已有设计系统自动推荐方案，写入完整 UI 规范统一确认，不增加独立访谈或逐项确认。
+
+版心描述主要内容区域、宽度策略、页面留白和响应式变化；其他对齐关系、选择理由和合理例外按项目规划，不新增通用对齐硬边界。实现采用已批准的项目规则；审查以项目规则为依据，不拿统一方向或尺寸机械比对。没有规则时先补齐项目方案，再按原有批准流程推进。
+
 ## 工作流引用
+
+- 导航统一调用：`references/navigation-selection.md`，包含三种意图、目录路由、来源选择和项目记录要求
+- 悬浮导航目录：`references/floating-navigation-catalog.json`；侧边导航目录：`references/sidebar-navigation-catalog.json`；移动底栏目录：`references/mobile-navigation-catalog.json`。按需加载，三类均无默认；移动范围仅为 iOS 26 风格底部导航
 
 - 规划阶段：`references/planning-workflow.md`
 - 产品画像：`references/product-archetypes.md`
@@ -107,6 +127,8 @@ C. 已有页面审查或改进
 - 分平台实现指南：`references/platform-implementations.md`
 - OneSeven 品牌指导：`references/oneseven-guidance.md`
 - OneSeven 展示模式组件与动效：`references/showcase-mode.md`
+- 默认顶部导航模板：页面确需顶部主导航、且无已批准等价方案时读取 `references/17-top-dock.md`；17 Top-dock 为 React / Next、Vue / Nuxt、原生 Web 的全宽下拉玻璃导航，项目许可与现有导航优先级仍有效
+- 顶部导航首批目录：读取 `references/top-navigation-catalog.json`；OneSeven / 壹柒默认只推荐 `17-top-dock`，`preline-website-headers` 与 `resizable-navbar` 已收录但必须按任务和项目许可显式选择，非默认不等于禁止使用
 - 展示模式可审计目录：`references/showcase-catalog.json`
 - React / Vue 液态玻璃按需取用指南：`references/glass-surface.md`
 - 动效单一事实来源：`references/animation-craft.md`
@@ -117,10 +139,12 @@ C. 已有页面审查或改进
 
 ## 代码实现模式
 
-1. 读取已批准的 UI 需求规范；没有时先建立最小设计基线
+1. 读取已批准的 UI 需求规范，包括项目版心与排版对齐方案；没有时先建立最小设计基线
 2. 读取产品画像、Hero 和对应产品规范
 3. 询问实体暗色或液态玻璃卡片
 4. 确认技术栈和平台
+   导航需求先执行 `references/navigation-selection.md`：按使用意图、导航职责和目标栈选择来源；悬浮、侧边、移动端不设置默认。只读取匹配类别和所选配方，沿用已确认范围，不重复选型。
+   若需顶部主导航，先按 `references/top-navigation-catalog.json` 做任务级单选：OneSeven / 壹柒且没有已批准等价方案时默认 `17-top-dock`；用户或项目规范明确点名时可选择 Preline 或 Resizable 覆盖默认。随后读取对应参考文件；规划或审查阶段只记录方向，不复制模板或安装依赖
 5. 若需要通用工程依赖，先按 `library-selection.md` 做现有依赖、原生能力、许可证、无障碍和性能检查；用户明确要求时才安装或修改依赖
 6. 若页面属于 AI 创作 / 对话工作台，按任务读取 `ai-component-catalog.json`；AICSS、Beautiful UI 和 Thinking Orbs 同一任务只选一个来源，Pro 或商业依赖不得自动取用
 7. 若为展示模式，读取目录并输出一个推荐提案，等待用户确认后运行 `scripts/resolve-showcase-components.mjs`；用户选择液态玻璃时使用 `--effects liquid-glass`。React / Next 默认推荐 `react-bits-glass-surface`，Vue / Nuxt 默认推荐 `vue-bits-glass-surface`，此时按需读取 `references/glass-surface.md`；两者均为 MIT + Commons Clause 条件许可，确认当前项目许可后才传入 `--approve-conditional <catalog-id>` 生成锁文件。未确认时停止，不静默换源；用户明确选择备选时使用 `--liquid-glass-source <catalog-id>`。Vanilla 默认方案不变；Skill 不打包上游组件源码，也不自动下载
